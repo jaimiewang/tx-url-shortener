@@ -13,14 +13,14 @@
                     <h1 class="mb-5">
                         Your new URL is:
                         <p>
-                            {{ .request.URL.Scheme }}://{{ .request.Host }}/{{ .shortUrl.Code }}
+                            {{ .request.URL.Scheme }}://{{ .request.Host }}{{ .request.Header.Get "X-Real-Path" }}{{ .shortUrl.Code }}
                         </p>
                     </h1>
                 {{ else }}
                     <h1 class="mb-5">
                         Your new URL is:
                         <p>
-                            http://{{ .request.Host }}/{{ .shortUrl.Code }}
+                            http://{{ .request.Host }}{{ .request.Header.Get "X-Real-Path" }}{{ .shortUrl.Code }}
                         </p>
                     </h1>
                 {{ end }}
