@@ -4,27 +4,14 @@ import (
 	"html/template"
 	"log"
 	"net/http"
-	"os"
-	"path/filepath"
 )
 
 var templates *template.Template
 
 func init() {
-	var templateFiles []string
 	var err error
 
-	err = filepath.Walk("templates/", func(path string, info os.FileInfo, err error) error {
-		if !info.IsDir() {
-			templateFiles = append(templateFiles, path)
-		}
-		return nil
-	})
-	if err != nil {
-		panic(err)
-	}
-
-	templates, err = template.ParseFiles(templateFiles...)
+	templates, err = template.ParseGlob("templates/*")
 	if err != nil {
 		panic(err)
 	}
