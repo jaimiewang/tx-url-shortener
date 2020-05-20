@@ -13,7 +13,7 @@
                     <h1 class="mb-5">
                         Your new URL is:
                         <p>
-                            { .request.URL.Scheme }}://{{ .request.Host }}/{{ .shortUrl.Code }}
+                            {{ .request.URL.Scheme }}://{{ .request.Host }}/{{ .shortUrl.Code }}
                         </p>
                     </h1>
                 {{ else }}
