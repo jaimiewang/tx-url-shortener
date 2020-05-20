@@ -5,7 +5,6 @@ import (
 	"github.com/gorilla/csrf"
 	"github.com/gorilla/mux"
 	"log"
-	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -103,17 +102,10 @@ func NewShortURLView(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		ipAddress, _, err := net.SplitHostPort(r.RemoteAddr)
-		if err != nil {
-			log.Println(err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
 		shortUrl = model.ShortURL{
 			Original:  urlString,
 			Code:      urlCode,
-			IPAddress: ipAddress,
+			IPAddress: r.RemoteAddr,
 			Time:      time.Now(),
 		}
 
