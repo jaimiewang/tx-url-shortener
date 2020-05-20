@@ -1,0 +1,9 @@
+database:
+  engine: "sqlite3"
+  user: ""
+  password: ""
+  port: 0
+  name: "../db.sqlite3"
+listen_address: ":8080"
+secret: "uncQbYcM9CEv+pLnx55x4pZKYSUN2Xyo"
+base_url_length: 5
