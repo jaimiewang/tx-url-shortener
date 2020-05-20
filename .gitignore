@@ -1,2 +1,2 @@
-db.sqlite3
-go.sum
+src/db.sqlite3
+src/go.sum

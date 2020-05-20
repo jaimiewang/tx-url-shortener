@@ -16,7 +16,7 @@ import (
 func main() {
 	rand.Seed(time.Now().UTC().UnixNano())
 
-	err := config.LoadConfig("../config.yml")
+	err := config.LoadConfig("config.yml")
 	if err != nil {
 		panic(err)
 	}
