@@ -14,12 +14,13 @@ type config struct {
 		Port     uint16 `yaml:"port"`
 		Name     string `yaml:"name"`
 	} `yaml:"database"`
-	ListenAddress string `yaml:"listen_address"`
-	Secret        string `yaml:"secret"`
-	BaseURLLength int    `yaml:"base_url_length"`
+	ListenAddress  string `yaml:"listen_address"`
+	Secret         string `yaml:"secret"`
+	BaseURLLength  int    `yaml:"base_url_length"`
+	ShortURLPrefix string `yaml:"short_url_prefix"`
 }
 
-var Conf = &config{}
+var Config = &config{}
 
 func LoadConfig(filename string) error {
 	data, err := ioutil.ReadFile(filename)
@@ -27,7 +28,7 @@ func LoadConfig(filename string) error {
 		return err
 	}
 
-	err = yaml.Unmarshal(data, Conf)
+	err = yaml.Unmarshal(data, Config)
 	if err != nil {
 		return err
 	}

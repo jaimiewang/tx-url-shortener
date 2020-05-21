@@ -9,20 +9,15 @@
     <div class="container">
         <div class="row" style="height: 200px;">
             <div class="col-xl-9 mx-auto">
+                <h1 class="mb-5">
+                    <p>Your new URL is:</p>
+                </h1>
                 {{ if .request.URL.Scheme }}
-                    <h1 class="mb-5">
-                        Your new URL is:
-                        <p>
-                            {{ .request.URL.Scheme }}://{{ .request.Host }}{{ .request.Header.Get "X-Real-Path" }}{{ .shortUrl.Code }}
-                        </p>
-                    </h1>
+                    <input type="text" name="url" class="form-control form-control-lg"
+                           value="{{ .request.URL.Scheme }}://{{ .shortUrlPrefix }}/{{ .shortUrl.Code }}" disabled>
                 {{ else }}
-                    <h1 class="mb-5">
-                        Your new URL is:
-                        <p>
-                            http://{{ .request.Host }}{{ .request.Header.Get "X-Real-Path" }}{{ .shortUrl.Code }}
-                        </p>
-                    </h1>
+                    <input type="text" name="url" class="form-control form-control-lg"
+                           value="http://{{ .shortUrlPrefix }}/{{ .shortUrl.Code }}" disabled>
                 {{ end }}
             </div>
         </div>
