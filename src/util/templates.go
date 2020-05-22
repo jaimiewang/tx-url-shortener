@@ -2,19 +2,16 @@ package util
 
 import (
 	"html/template"
-	"log"
 	"net/http"
 )
 
-var templates *template.Template = template.Must(template.ParseGlob("templates/*"))
+var templates = template.Must(template.ParseGlob("templates/*"))
 
 func RenderTemplate(w http.ResponseWriter, name string, data interface{}) {
+	w.Header().Set("Content-Type", "text/html")
+
 	err := templates.ExecuteTemplate(w, name, data)
 	if err != nil {
-		log.Println(err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		panic(err)
 	}
-
-	w.Header().Set("Content-Type", "text/html")
 }

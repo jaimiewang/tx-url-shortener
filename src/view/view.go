@@ -5,7 +5,7 @@ import (
 	"errors"
 	"github.com/gorilla/csrf"
 	"github.com/gorilla/mux"
-	"log"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -31,9 +31,7 @@ func ShortURLView(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	} else if err != nil {
-		log.Println(err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		panic(err)
 	}
 
 	http.Redirect(w, r, shortUrl.Original, http.StatusPermanentRedirect)
@@ -55,40 +53,41 @@ func NewShortURLView(w http.ResponseWriter, r *http.Request) {
 
 	if originalUrl.Host == "" || originalUrl.Scheme == "" {
 		util.RenderTemplate(w, "failed.html", map[string]interface{}{
-			"err": errors.New("host or scheme cannot be empty"),
+			"err": errors.New("host and scheme cannot be empty"),
 		})
 		return
 	}
 
 	if !strings.HasSuffix(originalUrl.Path, "/") {
 		originalUrl.Path += "/"
-	}
 
-	shortUrl := &model.ShortURL{
-		Original:  originalUrl.String(),
-		IPAddress: r.RemoteAddr,
-		Time:      time.Now(),
-	}
-
-	create, err := shortUrl.GenerateCode()
-	if err != nil {
-		log.Println(err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	if create {
-		err = database.DbMap.Insert(shortUrl)
+		remoteAddress, _, err := net.SplitHostPort(r.RemoteAddr)
 		if err != nil {
-			log.Println(err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+			remoteAddress = r.RemoteAddr
 		}
-	}
 
-	util.RenderTemplate(w, "success.html", map[string]interface{}{
-		"shortUrlPrefix": config.Config.ShortURLPrefix,
-		"shortUrl":       shortUrl,
-		"request":        r,
-	})
+		shortUrl := &model.ShortURL{
+			Original:  originalUrl.String(),
+			IPAddress: remoteAddress,
+			Time:      time.Now(),
+		}
+
+		create, err := shortUrl.GenerateCode()
+		if err != nil {
+			panic(err)
+		}
+
+		if create {
+			err = database.DbMap.Insert(shortUrl)
+			if err != nil {
+				panic(err)
+			}
+		}
+
+		util.RenderTemplate(w, "success.html", map[string]interface{}{
+			"shortUrlPrefix": config.Config.ShortURLPrefix,
+			"shortUrl":       shortUrl,
+			"request":        r,
+		})
+	}
 }

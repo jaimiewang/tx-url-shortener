@@ -17,22 +17,19 @@ type ShortURL struct {
 }
 
 func (shortUrl *ShortURL) GenerateCode() (bool, error) {
-	var urlCode string
 	var tempShortUrl ShortURL
 
 	err := database.DbMap.SelectOne(&tempShortUrl, "SELECT * FROM urls WHERE original=?", shortUrl.Original)
 	if err == sql.ErrNoRows {
+		var urlCode string
 		urlCodeLength := config.Config.BaseURLLength
 		urlsCount, err := database.DbMap.SelectInt("SELECT COUNT(*) FROM urls")
 		if err != nil {
 			return false, err
 		}
 
-		var counter int64
-
 		for {
-			counter = 0
-
+			counter := int64(0)
 			for {
 				if urlsCount >= 4 && counter >= urlsCount/4 {
 					break
@@ -51,12 +48,11 @@ func (shortUrl *ShortURL) GenerateCode() (bool, error) {
 				counter++
 			}
 
-			if urlsCount >= 1 && counter == urlsCount {
-				urlCodeLength += 1
-				continue
-			} else {
+			if urlsCount < 1 || counter != urlsCount {
 				break
 			}
+
+			urlCodeLength++
 		}
 
 		shortUrl.Code = urlCode

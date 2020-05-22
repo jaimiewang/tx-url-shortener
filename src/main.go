@@ -41,6 +41,7 @@ func main() {
 	router.Use(func(next http.Handler) http.Handler {
 		return handlers.LoggingHandler(os.Stdout, next)
 	})
+	router.Use(handlers.RecoveryHandler())
 	router.Use(csrf.Protect([]byte(config.Config.Secret), csrf.Secure(false)))
 
 	router.HandleFunc("/", view.IndexView).Methods("GET")
@@ -61,6 +62,6 @@ func main() {
 	}()
 
 	<-sc
-	server.Shutdown(nil)
+	_ = server.Shutdown(nil)
 	os.Exit(0)
 }
