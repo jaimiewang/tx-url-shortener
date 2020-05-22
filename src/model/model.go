@@ -2,6 +2,7 @@ package model
 
 import (
 	"database/sql"
+	"errors"
 	"time"
 	"tx-url-shortener/config"
 	"tx-url-shortener/database"
@@ -9,11 +10,11 @@ import (
 )
 
 type ShortURL struct {
-	Id        int       `db:"id, primarykey, autoincrement"`
+	Id        int64     `db:"id, primarykey, autoincrement"`
 	Time      time.Time `db:"time"`
-	IPAddress string    `db:"ip_addr"`
-	Original  string    `db:"original"`
-	Code      string    `db:"code"`
+	IPAddress string    `db:"ip_addr,size:15"`
+	Original  string    `db:"original,size:255"`
+	Code      string    `db:"code,size:255"`
 }
 
 func (shortUrl *ShortURL) GenerateCode() (bool, error) {
@@ -22,11 +23,10 @@ func (shortUrl *ShortURL) GenerateCode() (bool, error) {
 	err := database.DbMap.SelectOne(&tempShortUrl, "SELECT * FROM urls WHERE original=?", shortUrl.Original)
 	if err == sql.ErrNoRows {
 		var urlCode string
-		urlCodeLength := config.Config.BaseURLLength
 
-		for {
-			for i := 0; i < 10; i++ {
-				urlCode = util.RandomString(urlCodeLength)
+		for i := config.Config.BaseURLLength; i <= 255; i++ {
+			for j := 0; j < 3; j++ {
+				urlCode = util.RandomString(i)
 				ret, err := database.DbMap.SelectInt("SELECT COUNT(*) FROM urls WHERE code=?", urlCode)
 				if err != nil {
 					return false, err
@@ -36,10 +36,9 @@ func (shortUrl *ShortURL) GenerateCode() (bool, error) {
 					goto success
 				}
 			}
-
-			urlCodeLength++
 		}
 
+		return false, errors.New("code cannot be generated")
 	success:
 		shortUrl.Code = urlCode
 		return true, nil
