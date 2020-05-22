@@ -6,16 +6,7 @@ import (
 	"net/http"
 )
 
-var templates *template.Template
-
-func init() {
-	var err error
-
-	templates, err = template.ParseGlob("templates/*")
-	if err != nil {
-		panic(err)
-	}
-}
+var templates *template.Template = template.Must(template.ParseGlob("templates/*"))
 
 func RenderTemplate(w http.ResponseWriter, name string, data interface{}) {
 	err := templates.ExecuteTemplate(w, name, data)

@@ -76,11 +76,6 @@ func NewShortURLView(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	shortUrlPrefix := config.Config.ShortURLPrefix
-	if shortUrlPrefix == "" {
-		shortUrlPrefix = r.Host + r.URL.Path
-	}
-
 	util.RenderTemplate(w, "success.html", map[string]interface{}{
 		"shortUrlPrefix": config.Config.ShortURLPrefix,
 		"shortUrl":       shortUrl,

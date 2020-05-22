@@ -68,3 +68,14 @@ func (shortUrl *ShortURL) GenerateCode() (bool, error) {
 	*shortUrl = tempShortUrl
 	return false, nil
 }
+
+func InitModels() error {
+	database.DbMap.AddTableWithName(ShortURL{}, "urls")
+
+	err := database.DbMap.CreateTablesIfNotExists()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

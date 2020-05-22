@@ -7,24 +7,15 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
-	"net/url"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 	"tx-url-shortener/config"
 	"tx-url-shortener/database"
 	"tx-url-shortener/model"
 	"tx-url-shortener/view"
 )
-
-func InitDatabaseTables() error {
-	database.DbMap.AddTableWithName(model.ShortURL{}, "urls")
-
-	err := database.DbMap.CreateTablesIfNotExists()
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
 
 func main() {
 	rand.Seed(time.Now().UTC().UnixNano())
@@ -39,7 +30,7 @@ func main() {
 		panic(err)
 	}
 
-	err = InitDatabaseTables()
+	err = model.InitModels()
 	if err != nil {
 		panic(err)
 	}
@@ -48,14 +39,7 @@ func main() {
 
 	router.Use(handlers.ProxyHeaders)
 	router.Use(func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			realPath := r.Header.Get("X-Real-Path")
-			if realPath != "" {
-				r.URL.RawPath = realPath
-				r.URL.Path = url.PathEscape(realPath)
-			}
-			next.ServeHTTP(w, r)
-		})
+		return handlers.LoggingHandler(os.Stdout, next)
 	})
 	router.Use(csrf.Protect([]byte(config.Config.Secret), csrf.Secure(false)))
 
@@ -64,5 +48,19 @@ func main() {
 	router.HandleFunc("/{code}", view.ShortURLView).Methods("GET")
 	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("static/"))))
 
-	log.Fatal(http.ListenAndServe(config.Config.ListenAddress, router))
+	server := &http.Server{
+		Addr:    config.Config.ListenAddress,
+		Handler: router,
+	}
+
+	sc := make(chan os.Signal, 1)
+	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
+
+	go func() {
+		log.Fatal(server.ListenAndServe())
+	}()
+
+	<-sc
+	server.Shutdown(nil)
+	os.Exit(0)
 }
