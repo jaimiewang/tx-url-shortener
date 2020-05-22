@@ -2,6 +2,7 @@ package view
 
 import (
 	"database/sql"
+	"errors"
 	"github.com/gorilla/csrf"
 	"github.com/gorilla/mux"
 	"log"
@@ -45,8 +46,17 @@ func NewShortURLView(w http.ResponseWriter, r *http.Request) {
 	}
 
 	originalUrl, err := url.ParseRequestURI(r.FormValue("url"))
-	if err != nil || originalUrl.Host == "" || originalUrl.Scheme == "" {
-		util.RenderTemplate(w, "failed.html", map[string]interface{}{"err": err})
+	if err != nil {
+		util.RenderTemplate(w, "failed.html", map[string]interface{}{
+			"err": err,
+		})
+		return
+	}
+
+	if originalUrl.Host == "" || originalUrl.Scheme == "" {
+		util.RenderTemplate(w, "failed.html", map[string]interface{}{
+			"err": errors.New("host or scheme cannot be empty"),
+		})
 		return
 	}
 
