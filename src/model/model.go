@@ -23,18 +23,9 @@ func (shortUrl *ShortURL) GenerateCode() (bool, error) {
 	if err == sql.ErrNoRows {
 		var urlCode string
 		urlCodeLength := config.Config.BaseURLLength
-		urlsCount, err := database.DbMap.SelectInt("SELECT COUNT(*) FROM urls")
-		if err != nil {
-			return false, err
-		}
 
 		for {
-			counter := int64(0)
-			for {
-				if urlsCount >= 4 && counter >= urlsCount/4 {
-					break
-				}
-
+			for i := 0; i < 10; i++ {
 				urlCode = util.RandomString(urlCodeLength)
 				ret, err := database.DbMap.SelectInt("SELECT COUNT(*) FROM urls WHERE code=?", urlCode)
 				if err != nil {
@@ -42,26 +33,21 @@ func (shortUrl *ShortURL) GenerateCode() (bool, error) {
 				}
 
 				if ret == 0 {
-					break
+					goto success
 				}
-
-				counter++
-			}
-
-			if urlsCount < 1 || counter != urlsCount {
-				break
 			}
 
 			urlCodeLength++
 		}
 
+	success:
 		shortUrl.Code = urlCode
 		return true, nil
 	} else if err != nil {
 		return false, err
 	}
 
-	*shortUrl = tempShortUrl
+	shortUrl.Code = tempShortUrl.Code
 	return false, nil
 }
 
