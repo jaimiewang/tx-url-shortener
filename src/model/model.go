@@ -29,7 +29,7 @@ func (shortUrl *ShortURL) GenerateCode() (bool, error) {
 				urlCode = util.RandomString(urlCodeLength)
 				ret, err := database.DbMap.SelectInt("SELECT COUNT(*) FROM urls WHERE code=?", urlCode)
 				if err != nil {
-					return false, nil
+					return false, err
 				}
 
 				if ret == 0 {
