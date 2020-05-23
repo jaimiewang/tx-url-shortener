@@ -39,7 +39,7 @@ func NewShortURLEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if originalUrl.Host == "" || originalUrl.Scheme == "" {
-		http.Error(w, NewAPIError("").Error(), http.StatusBadRequest)
+		http.Error(w, NewAPIError("host and scheme cannot be empty").Error(), http.StatusBadRequest)
 		return
 	}
 
