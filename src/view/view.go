@@ -34,6 +34,12 @@ func ShortURLView(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
+	shortUrl.Used++
+	_, err = database.DbMap.Update(shortUrl)
+	if err != nil {
+		panic(err)
+	}
+
 	http.Redirect(w, r, shortUrl.Original, http.StatusPermanentRedirect)
 }
 
@@ -60,34 +66,32 @@ func NewShortURLView(w http.ResponseWriter, r *http.Request) {
 
 	if !strings.HasSuffix(originalUrl.Path, "/") {
 		originalUrl.Path += "/"
-
-		remoteAddress, _, err := net.SplitHostPort(r.RemoteAddr)
-		if err != nil {
-			remoteAddress = r.RemoteAddr
-		}
-
-		shortUrl := &model.ShortURL{
-			Original:  originalUrl.String(),
-			IPAddress: remoteAddress,
-			Time:      time.Now(),
-		}
-
-		create, err := shortUrl.GenerateCode()
-		if err != nil {
-			panic(err)
-		}
-
-		if create {
-			err = database.DbMap.Insert(shortUrl)
-			if err != nil {
-				panic(err)
-			}
-		}
-
-		util.RenderTemplate(w, "success.html", map[string]interface{}{
-			"shortUrlPrefix": config.Config.ShortURLPrefix,
-			"shortUrl":       shortUrl,
-			"request":        r,
-		})
 	}
+
+	remoteAddress, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		remoteAddress = r.RemoteAddr
+	}
+
+	shortUrl := &model.ShortURL{
+		Original:  originalUrl.String(),
+		IPAddress: remoteAddress,
+		Time:      time.Now().UTC().Unix(),
+	}
+
+	err = shortUrl.GenerateCode()
+	if err != nil {
+		panic(err)
+	}
+
+	err = database.DbMap.Insert(shortUrl)
+	if err != nil {
+		panic(err)
+	}
+
+	util.RenderTemplate(w, "success.html", map[string]interface{}{
+		"shortUrlPrefix": config.Config.ShortURLPrefix,
+		"shortUrl":       shortUrl,
+		"request":        r,
+	})
 }
