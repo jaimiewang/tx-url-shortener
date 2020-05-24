@@ -19,6 +19,7 @@ type config struct {
 	Secret         string `yaml:"secret"`
 	BaseCodeLength int    `yaml:"base_code_length"`
 	ShortURLPrefix string `yaml:"short_url_prefix"`
+	CacheSize      int    `yaml:"cache_size"`
 }
 
 var Config = &config{}
@@ -32,6 +33,10 @@ func LoadConfig(filename string) error {
 	err = yaml.Unmarshal(data, Config)
 	if err != nil {
 		return err
+	}
+
+	if Config.CacheSize < 1 {
+		return errors.New("cache_size must be positive")
 	}
 
 	if Config.BaseCodeLength > 11 {

@@ -6,7 +6,6 @@ import (
 	"github.com/coocood/freecache"
 	_ "github.com/mattn/go-sqlite3"
 	"gopkg.in/gorp.v2"
-	"runtime/debug"
 	"strings"
 	"tx-url-shortener/config"
 )
@@ -34,8 +33,6 @@ func InitDatabase() error {
 	}
 
 	DbMap = &gorp.DbMap{Db: db, Dialect: dialect}
-	Cache = freecache.NewCache(100 * 1024 * 1024)
-	debug.SetGCPercent(20)
-
+	Cache = freecache.NewCache(config.Config.CacheSize)
 	return nil
 }

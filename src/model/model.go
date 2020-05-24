@@ -4,15 +4,22 @@ import (
 	"errors"
 	"fmt"
 	"github.com/coocood/freecache"
+	"reflect"
 	"tx-url-shortener/config"
 	"tx-url-shortener/database"
 	"tx-url-shortener/util"
 )
 
+var ErrAlreadyInDatabase = errors.New("already stored in database")
 var ErrCannotBeGenerated = errors.New("cannot be generated")
 
-func findModel(model interface{}, cacheKey interface{}, cachePrefix string, cacheExpire int, query string, queryParams ...interface{}) error {
-	cacheValue, err := database.Cache.Get([]byte(fmt.Sprintf("%s_%v", cachePrefix, cacheKey)))
+func getModel(model interface{}, cacheKey string, cachePrefix string, cacheExpire int, query string, queryParams ...interface{}) error {
+	t := reflect.TypeOf(model)
+	if t.Kind() != reflect.Ptr {
+		return fmt.Errorf("getModel model must be a pointer, but got: %t", t)
+	}
+
+	cacheValue, err := database.Cache.Get([]byte(fmt.Sprintf("%s_%s", cachePrefix, cacheKey)))
 	if err != nil && err != freecache.ErrNotFound {
 		return err
 	}
@@ -42,7 +49,12 @@ func findModel(model interface{}, cacheKey interface{}, cachePrefix string, cach
 	return nil
 }
 
-func saveModel(model interface{}, modelId int64, cacheKey interface{}, cachePrefix string, cacheExpire int) error {
+func saveModel(model interface{}, modelId int64, cacheKey string, cachePrefix string, cacheExpire int) error {
+	t := reflect.TypeOf(model)
+	if t.Kind() != reflect.Ptr {
+		return fmt.Errorf("saveModel model must be a pointer, but got: %t", t)
+	}
+
 	var err error
 
 	if modelId == 0 {
@@ -60,8 +72,7 @@ func saveModel(model interface{}, modelId int64, cacheKey interface{}, cachePref
 		return err
 	}
 
-	err = database.Cache.Set([]byte(fmt.Sprintf("%s_%v", cachePrefix, cacheKey)), cacheValue, cacheExpire)
-	return err
+	return database.Cache.Set([]byte(fmt.Sprintf("%s_%s", cachePrefix, cacheKey)), cacheValue, cacheExpire)
 }
 
 type ShortURL struct {
@@ -75,7 +86,7 @@ type ShortURL struct {
 
 func (shortURL *ShortURL) GenerateCode() error {
 	if shortURL.Id != 0 {
-		return errors.New("already stored in database")
+		return ErrAlreadyInDatabase
 	}
 
 	var urlCode string
@@ -100,9 +111,9 @@ success:
 	return nil
 }
 
-func FindShortURL(code string) (*ShortURL, error) {
+func GetShortURL(code string) (*ShortURL, error) {
 	shortURL := ShortURL{}
-	err := findModel(
+	err := getModel(
 		&shortURL,
 		code,
 		"urls",
@@ -128,6 +139,7 @@ func SaveShortURL(shortURL *ShortURL) error {
 }
 
 const APIKeySize = 20
+const APIKeyChars = util.AsciiLetters + util.Digits + util.SpecialChars
 
 type APIKey struct {
 	Id    int64  `db:"id, primarykey, autoincrement"`
@@ -137,13 +149,13 @@ type APIKey struct {
 
 func (apiKey *APIKey) GenerateToken() error {
 	if apiKey.Id != 0 {
-		return errors.New("already stored in database")
+		return ErrAlreadyInDatabase
 	}
 
 	var token string
 
 	for j := 0; j < 3; j++ {
-		token = util.RandomString(APIKeySize, util.AsciiLetters)
+		token = util.RandomString(APIKeySize, APIKeyChars)
 		ret, err := database.DbMap.SelectInt("SELECT COUNT(*) FROM api_keys WHERE token=?", token)
 		if err != nil {
 			return err
@@ -160,9 +172,9 @@ success:
 	return nil
 }
 
-func FindAPIKey(token string) (*APIKey, error) {
+func GetAPIKey(token string) (*APIKey, error) {
 	apiKey := APIKey{}
-	err := findModel(
+	err := getModel(
 		&apiKey,
 		token,
 		"api_keys",
@@ -179,7 +191,7 @@ func FindAPIKey(token string) (*APIKey, error) {
 
 func SaveAPIKey(apiKey *APIKey) error {
 	return saveModel(
-		&apiKey,
+		apiKey,
 		apiKey.Id,
 		apiKey.Token,
 		"api_keys",

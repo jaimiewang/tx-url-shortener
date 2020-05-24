@@ -12,29 +12,43 @@ import (
 	"tx-url-shortener/util"
 )
 
+type shortURLResponse struct {
+	IPAddress string `json:"ip_address"`
+	Counter   int64  `json:"counter"`
+	Code      string `json:"code"`
+	Time      int64  `json:"time"`
+	Original  string `json:"original"`
+}
+
 func ShortURLEndpoint(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	vars := mux.Vars(r)
 
-	shortURL, err := model.FindShortURL(vars["code"])
+	shortURL, err := model.GetShortURL(vars["code"])
 	if err == sql.ErrNoRows {
-		http.Error(w, NewAPIError("not found").Error(), http.StatusNotFound)
+		APIError(w, ErrNotFound, http.StatusNotFound)
 		return
 	} else if err != nil {
 		panic(err)
 	}
 
-	err = util.WriteJson(w, shortURL)
+	err = util.WriteJson(w, shortURLResponse{
+		IPAddress: shortURL.IPAddress,
+		Counter:   shortURL.Counter,
+		Code:      shortURL.Code,
+		Time:      shortURL.Time,
+		Original:  shortURL.Original,
+	})
 	if err != nil {
 		panic(err)
 	}
 }
 
-type newURLRequest struct {
+type newShortURLRequest struct {
 	URL string `json:"url"`
 }
 
-type newURLResponse struct {
+type newShortURLResponse struct {
 	Code string `json:"code"`
 	URL  string `json:"url"`
 }
@@ -42,16 +56,16 @@ type newURLResponse struct {
 func NewShortURLEndpoint(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	requestData := &newURLRequest{}
+	requestData := &newShortURLRequest{}
 	err := json.NewDecoder(r.Body).Decode(requestData)
 	if err != nil {
-		http.Error(w, NewAPIErrorFromError(err).Error(), http.StatusBadRequest)
+		APIError(w, err, http.StatusBadRequest)
 		return
 	}
 
 	originalURL, err := util.ValidateURL(requestData.URL)
 	if err != nil {
-		http.Error(w, NewAPIErrorFromError(err).Error(), http.StatusBadRequest)
+		APIError(w, err, http.StatusBadRequest)
 		return
 	}
 
@@ -76,7 +90,7 @@ func NewShortURLEndpoint(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	err = util.WriteJson(w, newURLResponse{
+	err = util.WriteJson(w, newShortURLResponse{
 		Code: shortURL.Code,
 		URL:  config.Config.ShortURLPrefix + "/" + shortURL.Code,
 	})

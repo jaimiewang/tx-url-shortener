@@ -12,6 +12,8 @@ import (
 )
 
 const (
+	Digits         = "0123456789"
+	SpecialChars   = "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~"
 	AsciiLowercase = "abcdefghijklmnopqrstuvwxyz"
 	AsciiUppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	AsciiLetters   = AsciiLowercase + AsciiUppercase
@@ -65,11 +67,11 @@ func ValidateURL(u string) (string, error) {
 }
 
 func WriteJson(w io.Writer, i interface{}) error {
-	bytes, err := json.Marshal(i)
+	b, err := json.Marshal(i)
 	if err != nil {
 		return err
 	}
 
-	_, err = w.Write(bytes)
+	_, err = w.Write(b)
 	return err
 }
