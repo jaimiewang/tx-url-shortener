@@ -2,7 +2,6 @@ package model
 
 import (
 	"errors"
-	"log"
 	"tx-url-shortener/config"
 	"tx-url-shortener/database"
 	"tx-url-shortener/util"
@@ -52,13 +51,6 @@ func FindShortURL(code string) (*ShortURL, error) {
 	bytes, errGet := database.Cache.Get(cacheKey)
 	if errGet == nil {
 		errDeserialize = util.Deserialize(bytes, &shortURL)
-	}
-
-	if errGet != nil {
-		log.Println("errGet: " + errGet.Error())
-	}
-	if errDeserialize != nil {
-		log.Println("errDeserialize: " + errDeserialize.Error())
 	}
 
 	if bytes == nil || errGet != nil || errDeserialize != nil {
