@@ -2,10 +2,67 @@ package model
 
 import (
 	"errors"
+	"fmt"
+	"github.com/coocood/freecache"
 	"tx-url-shortener/config"
 	"tx-url-shortener/database"
 	"tx-url-shortener/util"
 )
+
+var ErrCannotBeGenerated = errors.New("cannot be generated")
+
+func findModel(model interface{}, cacheKey interface{}, cachePrefix string, cacheExpire int, query string, queryParams ...interface{}) error {
+	cacheValue, err := database.Cache.Get([]byte(fmt.Sprintf("%s_%v", cachePrefix, cacheKey)))
+	if err != nil && err != freecache.ErrNotFound {
+		return err
+	}
+
+	if err == freecache.ErrNotFound {
+		err = database.DbMap.SelectOne(model, query, queryParams...)
+		if err != nil {
+			return err
+		}
+
+		cacheValue, err = util.Serialize(model)
+		if err != nil {
+			return err
+		}
+
+		err = database.Cache.Set(cacheValue, cacheValue, cacheExpire)
+		if err != nil {
+			return err
+		}
+	} else {
+		err = util.Deserialize(cacheValue, model)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func saveModel(model interface{}, modelId int64, cacheKey interface{}, cachePrefix string, cacheExpire int) error {
+	var err error
+
+	if modelId == 0 {
+		err = database.DbMap.Insert(model)
+	} else {
+		_, err = database.DbMap.Update(model)
+	}
+
+	if err != nil {
+		return err
+	}
+
+	cacheValue, err := util.Serialize(model)
+	if err != nil {
+		return err
+	}
+
+	err = database.Cache.Set([]byte(fmt.Sprintf("%s_%v", cachePrefix, cacheKey)), cacheValue, cacheExpire)
+	return err
+}
 
 type ShortURL struct {
 	Id        int64  `db:"id, primarykey, autoincrement"`
@@ -37,66 +94,46 @@ func (shortURL *ShortURL) GenerateCode() error {
 		}
 	}
 
-	return errors.New("code cannot be generated")
+	return ErrCannotBeGenerated
 success:
 	shortURL.Code = urlCode
 	return nil
 }
 
 func FindShortURL(code string) (*ShortURL, error) {
-	var shortURL ShortURL
-	var errDeserialize error
-	cacheKey := []byte("urls_" + code)
-
-	bytes, errGet := database.Cache.Get(cacheKey)
-	if errGet == nil {
-		errDeserialize = util.Deserialize(bytes, &shortURL)
-	}
-
-	if bytes == nil || errGet != nil || errDeserialize != nil {
-		err := database.DbMap.SelectOne(&shortURL, "SELECT * FROM urls WHERE code=?", code)
-		if err != nil {
-			return nil, err
-		}
-
-		bytes, err = util.Serialize(shortURL)
-		if err == nil {
-			_ = database.Cache.Set(cacheKey, bytes, 15*60)
-		}
+	shortURL := ShortURL{}
+	err := findModel(
+		&shortURL,
+		code,
+		"urls",
+		15*60,
+		"SELECT * FROM urls WHERE code=?",
+		code,
+	)
+	if err != nil {
+		return nil, err
 	}
 
 	return &shortURL, nil
 }
 
 func SaveShortURL(shortURL *ShortURL) error {
-	var err error
-
-	if shortURL.Id == 0 {
-		err = database.DbMap.Insert(shortURL)
-	} else {
-		_, err = database.DbMap.Update(shortURL)
-	}
-
-	if err != nil {
-		return err
-	}
-
-	cacheKey := []byte("urls_" + shortURL.Code)
-	bytes, err := util.Serialize(shortURL)
-	if err != nil {
-		_ = database.Cache.Set(cacheKey, bytes, 15*60)
-	}
-
-	return nil
+	return saveModel(
+		shortURL,
+		shortURL.Id,
+		shortURL.Code,
+		"urls",
+		15*60,
+	)
 }
+
+const APIKeySize = 20
 
 type APIKey struct {
 	Id    int64  `db:"id, primarykey, autoincrement"`
 	Time  int64  `db:"time"`
 	Token string `db:"token, size:20"`
 }
-
-const APIKeySize = 20
 
 func (apiKey *APIKey) GenerateToken() error {
 	if apiKey.Id != 0 {
@@ -117,57 +154,37 @@ func (apiKey *APIKey) GenerateToken() error {
 		}
 	}
 
-	return errors.New("token cannot be generated")
+	return ErrCannotBeGenerated
 success:
 	apiKey.Token = token
 	return nil
 }
 
 func FindAPIKey(token string) (*APIKey, error) {
-	var apiKey APIKey
-	var errDeserialize error
-	cacheKey := []byte("api_keys_" + token)
-
-	bytes, errGet := database.Cache.Get(cacheKey)
-	if errGet == nil {
-		errDeserialize = util.Deserialize(bytes, &apiKey)
-	}
-
-	if bytes == nil || errGet != nil || errDeserialize != nil {
-		err := database.DbMap.SelectOne(&apiKey, "SELECT * FROM api_keys WHERE token=?", token)
-		if err != nil {
-			return nil, err
-		}
-
-		bytes, err = util.Serialize(apiKey)
-		if err == nil {
-			_ = database.Cache.Set(cacheKey, bytes, 5*60)
-		}
+	apiKey := APIKey{}
+	err := findModel(
+		&apiKey,
+		token,
+		"api_keys",
+		5*60,
+		"SELECT * FROM api_keys WHERE token=?",
+		token,
+	)
+	if err != nil {
+		return nil, err
 	}
 
 	return &apiKey, nil
 }
 
 func SaveAPIKey(apiKey *APIKey) error {
-	var err error
-
-	if apiKey.Id == 0 {
-		err = database.DbMap.Insert(apiKey)
-	} else {
-		_, err = database.DbMap.Update(apiKey)
-	}
-
-	if err != nil {
-		return err
-	}
-
-	cacheKey := []byte("api_keys_" + apiKey.Token)
-	bytes, err := util.Serialize(apiKey)
-	if err != nil {
-		_ = database.Cache.Set(cacheKey, bytes, 5*60)
-	}
-
-	return nil
+	return saveModel(
+		&apiKey,
+		apiKey.Id,
+		apiKey.Token,
+		"api_keys",
+		5*60,
+	)
 }
 
 func InitModels() error {
