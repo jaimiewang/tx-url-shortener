@@ -1,23 +1,40 @@
 package apiv1
 
 import (
+	"database/sql"
 	"encoding/json"
+	"github.com/gorilla/mux"
 	"net"
 	"net/http"
-	"net/url"
-	"strings"
 	"time"
 	"tx-url-shortener/config"
-	"tx-url-shortener/database"
 	"tx-url-shortener/model"
 	"tx-url-shortener/util"
 )
 
-type newUrlRequest struct {
+func ShortURLEndpoint(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	vars := mux.Vars(r)
+
+	shortURL, err := model.FindShortURL(vars["code"])
+	if err == sql.ErrNoRows {
+		http.Error(w, NewAPIError("not found").Error(), http.StatusNotFound)
+		return
+	} else if err != nil {
+		panic(err)
+	}
+
+	err = util.WriteJson(w, shortURL)
+	if err != nil {
+		panic(err)
+	}
+}
+
+type newURLRequest struct {
 	URL string `json:"url"`
 }
 
-type newUrlResponse struct {
+type newURLResponse struct {
 	Code string `json:"code"`
 	URL  string `json:"url"`
 }
@@ -25,26 +42,17 @@ type newUrlResponse struct {
 func NewShortURLEndpoint(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	data := &newUrlRequest{}
-	err := json.NewDecoder(r.Body).Decode(data)
+	requestData := &newURLRequest{}
+	err := json.NewDecoder(r.Body).Decode(requestData)
 	if err != nil {
 		http.Error(w, NewAPIErrorFromError(err).Error(), http.StatusBadRequest)
 		return
 	}
 
-	originalUrl, err := url.ParseRequestURI(data.URL)
+	originalURL, err := util.ValidateURL(requestData.URL)
 	if err != nil {
 		http.Error(w, NewAPIErrorFromError(err).Error(), http.StatusBadRequest)
 		return
-	}
-
-	if originalUrl.Host == "" || originalUrl.Scheme == "" {
-		http.Error(w, NewAPIError("host and scheme cannot be empty").Error(), http.StatusBadRequest)
-		return
-	}
-
-	if !strings.HasSuffix(originalUrl.Path, "/") {
-		originalUrl.Path += "/"
 	}
 
 	remoteAddress, _, err := net.SplitHostPort(r.RemoteAddr)
@@ -52,25 +60,25 @@ func NewShortURLEndpoint(w http.ResponseWriter, r *http.Request) {
 		remoteAddress = r.RemoteAddr
 	}
 
-	shortUrl := &model.ShortURL{
-		Original:  originalUrl.String(),
+	shortURL := &model.ShortURL{
+		Original:  originalURL,
 		IPAddress: remoteAddress,
 		Time:      time.Now().UTC().Unix(),
 	}
 
-	err = shortUrl.GenerateCode()
+	err = shortURL.GenerateCode()
 	if err != nil {
 		panic(err)
 	}
 
-	err = database.DbMap.Insert(shortUrl)
+	err = model.SaveShortURL(shortURL)
 	if err != nil {
 		panic(err)
 	}
 
-	err = util.WriteJson(w, newUrlResponse{
-		Code: shortUrl.Code,
-		URL:  config.Config.ShortURLPrefix + "/" + shortUrl.Code,
+	err = util.WriteJson(w, newURLResponse{
+		Code: shortURL.Code,
+		URL:  config.Config.ShortURLPrefix + "/" + shortURL.Code,
 	})
 	if err != nil {
 		panic(err)

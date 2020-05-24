@@ -2,6 +2,7 @@ package model
 
 import (
 	"errors"
+	"log"
 	"tx-url-shortener/config"
 	"tx-url-shortener/database"
 	"tx-url-shortener/util"
@@ -13,11 +14,11 @@ type ShortURL struct {
 	IPAddress string `db:"ip_addr, size:15"`
 	Original  string `db:"original, size:255"`
 	Code      string `db:"code, size:11"`
-	Used      int64  `db:"used"`
+	Counter   int64  `db:"counter"`
 }
 
-func (shortUrl *ShortURL) GenerateCode() error {
-	if shortUrl.Id != 0 {
+func (shortURL *ShortURL) GenerateCode() error {
+	if shortURL.Id != 0 {
 		return errors.New("already stored in database")
 	}
 
@@ -39,7 +40,61 @@ func (shortUrl *ShortURL) GenerateCode() error {
 
 	return errors.New("code cannot be generated")
 success:
-	shortUrl.Code = urlCode
+	shortURL.Code = urlCode
+	return nil
+}
+
+func FindShortURL(code string) (*ShortURL, error) {
+	var shortURL ShortURL
+	var errDeserialize error
+	cacheKey := []byte("urls_" + code)
+
+	bytes, errGet := database.Cache.Get(cacheKey)
+	if errGet == nil {
+		errDeserialize = util.Deserialize(bytes, &shortURL)
+	}
+
+	if errGet != nil {
+		log.Println("errGet: " + errGet.Error())
+	}
+	if errDeserialize != nil {
+		log.Println("errDeserialize: " + errDeserialize.Error())
+	}
+
+	if bytes == nil || errGet != nil || errDeserialize != nil {
+		err := database.DbMap.SelectOne(&shortURL, "SELECT * FROM urls WHERE code=?", code)
+		if err != nil {
+			return nil, err
+		}
+
+		bytes, err = util.Serialize(shortURL)
+		if err == nil {
+			_ = database.Cache.Set(cacheKey, bytes, 15*60)
+		}
+	}
+
+	return &shortURL, nil
+}
+
+func SaveShortURL(shortURL *ShortURL) error {
+	var err error
+
+	if shortURL.Id == 0 {
+		err = database.DbMap.Insert(shortURL)
+	} else {
+		_, err = database.DbMap.Update(shortURL)
+	}
+
+	if err != nil {
+		return err
+	}
+
+	cacheKey := []byte("urls_" + shortURL.Code)
+	bytes, err := util.Serialize(shortURL)
+	if err != nil {
+		_ = database.Cache.Set(cacheKey, bytes, 15*60)
+	}
+
 	return nil
 }
 
@@ -73,6 +128,53 @@ func (apiKey *APIKey) GenerateToken() error {
 	return errors.New("token cannot be generated")
 success:
 	apiKey.Token = token
+	return nil
+}
+
+func FindAPIKey(token string) (*APIKey, error) {
+	var apiKey APIKey
+	var errDeserialize error
+	cacheKey := []byte("api_keys_" + token)
+
+	bytes, errGet := database.Cache.Get(cacheKey)
+	if errGet == nil {
+		errDeserialize = util.Deserialize(bytes, &apiKey)
+	}
+
+	if bytes == nil || errGet != nil || errDeserialize != nil {
+		err := database.DbMap.SelectOne(&apiKey, "SELECT * FROM api_keys WHERE token=?", token)
+		if err != nil {
+			return nil, err
+		}
+
+		bytes, err = util.Serialize(apiKey)
+		if err == nil {
+			_ = database.Cache.Set(cacheKey, bytes, 5*60)
+		}
+	}
+
+	return &apiKey, nil
+}
+
+func SaveAPIKey(apiKey *APIKey) error {
+	var err error
+
+	if apiKey.Id == 0 {
+		err = database.DbMap.Insert(apiKey)
+	} else {
+		_, err = database.DbMap.Update(apiKey)
+	}
+
+	if err != nil {
+		return err
+	}
+
+	cacheKey := []byte("api_keys_" + apiKey.Token)
+	bytes, err := util.Serialize(apiKey)
+	if err != nil {
+		_ = database.Cache.Set(cacheKey, bytes, 5*60)
+	}
+
 	return nil
 }
 

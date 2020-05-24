@@ -40,6 +40,7 @@ func initHTTPServer() *http.Server {
 	viewRouter.HandleFunc("/", view.NewShortURLView).Methods("POST")
 	viewRouter.HandleFunc("/{code}", view.ShortURLView).Methods("GET")
 
+	apiv1Router.HandleFunc("/urls/{code}", apiv1.ShortURLEndpoint).Methods("GET")
 	apiv1Router.HandleFunc("/urls", apiv1.NewShortURLEndpoint).Methods("PUT")
 
 	staticRouter.PathPrefix("").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("static/"))))
@@ -82,7 +83,7 @@ func main() {
 			panic(err)
 		}
 
-		err = database.DbMap.Insert(apiKey)
+		err = model.SaveAPIKey(apiKey)
 		if err != nil {
 			panic(err)
 		}

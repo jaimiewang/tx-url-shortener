@@ -2,13 +2,10 @@ package view
 
 import (
 	"database/sql"
-	"errors"
 	"github.com/gorilla/csrf"
 	"github.com/gorilla/mux"
 	"net"
 	"net/http"
-	"net/url"
-	"strings"
 	"time"
 	"tx-url-shortener/config"
 	"tx-url-shortener/database"
@@ -23,10 +20,9 @@ func IndexView(w http.ResponseWriter, r *http.Request) {
 }
 
 func ShortURLView(w http.ResponseWriter, r *http.Request) {
-	var shortUrl model.ShortURL
 	vars := mux.Vars(r)
 
-	err := database.DbMap.SelectOne(&shortUrl, "SELECT * FROM urls WHERE code=?", vars["code"])
+	shortURL, err := model.FindShortURL(vars["code"])
 	if err == sql.ErrNoRows {
 		http.NotFound(w, r)
 		return
@@ -34,13 +30,13 @@ func ShortURLView(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	shortUrl.Used++
-	_, err = database.DbMap.Update(shortUrl)
+	shortURL.Counter++
+	_, err = database.DbMap.Update(shortURL)
 	if err != nil {
 		panic(err)
 	}
 
-	http.Redirect(w, r, shortUrl.Original, http.StatusPermanentRedirect)
+	http.Redirect(w, r, shortURL.Original, http.StatusPermanentRedirect)
 }
 
 func NewShortURLView(w http.ResponseWriter, r *http.Request) {
@@ -49,7 +45,7 @@ func NewShortURLView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	originalUrl, err := url.ParseRequestURI(r.FormValue("url"))
+	originalURL, err := util.ValidateURL(r.FormValue("url"))
 	if err != nil {
 		util.RenderTemplate(w, "failed.html", map[string]interface{}{
 			"err": err,
@@ -57,41 +53,30 @@ func NewShortURLView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if originalUrl.Host == "" || originalUrl.Scheme == "" {
-		util.RenderTemplate(w, "failed.html", map[string]interface{}{
-			"err": errors.New("host and scheme cannot be empty"),
-		})
-		return
-	}
-
-	if !strings.HasSuffix(originalUrl.Path, "/") {
-		originalUrl.Path += "/"
-	}
-
 	remoteAddress, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
 		remoteAddress = r.RemoteAddr
 	}
 
-	shortUrl := &model.ShortURL{
-		Original:  originalUrl.String(),
+	shortURL := &model.ShortURL{
+		Original:  originalURL,
 		IPAddress: remoteAddress,
 		Time:      time.Now().UTC().Unix(),
 	}
 
-	err = shortUrl.GenerateCode()
+	err = shortURL.GenerateCode()
 	if err != nil {
 		panic(err)
 	}
 
-	err = database.DbMap.Insert(shortUrl)
+	err = model.SaveShortURL(shortURL)
 	if err != nil {
 		panic(err)
 	}
 
 	util.RenderTemplate(w, "success.html", map[string]interface{}{
-		"shortUrlPrefix": config.Config.ShortURLPrefix,
-		"shortUrl":       shortUrl,
+		"shortURLPrefix": config.Config.ShortURLPrefix,
+		"shortURL":       shortURL,
 		"request":        r,
 	})
 }

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
-	"tx-url-shortener/database"
+	"tx-url-shortener/model"
 )
 
 type apiError struct {
@@ -33,12 +33,12 @@ func AuthHandler(next http.Handler) http.Handler {
 			return
 		}
 
-		ret, err := database.DbMap.SelectInt("SELECT COUNT(*) FROM api_keys WHERE token=?", token)
+		apiKey, err := model.FindAPIKey(token)
 		if err != nil {
 			panic(err)
 		}
 
-		if ret == 0 {
+		if apiKey == nil {
 			w.Header().Set("Content-Type", "application/json")
 			http.Error(w, NewAPIError("invalid authorization token").Error(), http.StatusForbidden)
 			return

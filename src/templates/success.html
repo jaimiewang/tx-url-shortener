@@ -14,10 +14,10 @@
                 </h1>
                 {{ if .request.URL.Scheme }}
                     <input type="text" name="url" class="form-control form-control-lg"
-                           value="{{ .request.URL.Scheme }}://{{ .shortUrlPrefix }}/{{ .shortUrl.Code }}" disabled>
+                           value="{{ .request.URL.Scheme }}://{{ .shortURLPrefix }}/{{ .shortURL.Code }}" disabled>
                 {{ else }}
                     <input type="text" name="url" class="form-control form-control-lg"
-                           value="http://{{ .shortUrlPrefix }}/{{ .shortUrl.Code }}" disabled>
+                           value="http://{{ .shortURLPrefix }}/{{ .shortURL.Code }}" disabled>
                 {{ end }}
             </div>
         </div>

@@ -3,13 +3,16 @@ package database
 import (
 	"database/sql"
 	"errors"
+	"github.com/coocood/freecache"
 	_ "github.com/mattn/go-sqlite3"
 	"gopkg.in/gorp.v2"
+	"runtime/debug"
 	"strings"
 	"tx-url-shortener/config"
 )
 
 var DbMap *gorp.DbMap
+var Cache *freecache.Cache
 
 func InitDatabase() error {
 	var driverName string
@@ -31,5 +34,8 @@ func InitDatabase() error {
 	}
 
 	DbMap = &gorp.DbMap{Db: db, Dialect: dialect}
+	Cache = freecache.NewCache(100 * 1024 * 1024)
+	debug.SetGCPercent(20)
+
 	return nil
 }
