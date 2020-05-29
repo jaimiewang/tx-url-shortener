@@ -21,9 +21,9 @@ func IndexView(w http.ResponseWriter, r *http.Request) {
 
 func ShortURLView(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	shortURL := &model.ShortURL{}
+	shortURL := model.ShortURL{}
 
-	err := database.DbMap.SelectOne(shortURL, "SELECT * FROM urls WHERE code=?", vars["code"])
+	err := database.DbMap.SelectOne(&shortURL, "SELECT * FROM urls WHERE code=?", vars["code"])
 	if err == sql.ErrNoRows {
 		http.NotFound(w, r)
 		return
@@ -59,7 +59,7 @@ func NewShortURLView(w http.ResponseWriter, r *http.Request) {
 		remoteAddress = r.RemoteAddr
 	}
 
-	shortURL := &model.ShortURL{
+	shortURL := model.ShortURL{
 		Original:  originalURL,
 		IPAddress: remoteAddress,
 		Time:      time.Now().UTC().Unix(),
@@ -70,7 +70,7 @@ func NewShortURLView(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	err = database.DbMap.Insert(shortURL)
+	err = database.DbMap.Insert(&shortURL)
 	if err != nil {
 		panic(err)
 	}

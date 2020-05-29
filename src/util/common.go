@@ -25,19 +25,19 @@ func RandomString(n int, chars string) string {
 	return builder.String()
 }
 
-func ValidateURL(u string) (string, error) {
-	url_, err := url.ParseRequestURI(u)
+func ValidateURL(rawurl string) (string, error) {
+	u, err := url.ParseRequestURI(rawurl)
 	if err != nil {
 		return "", err
 	}
 
-	if url_.Host == "" || url_.Scheme == "" {
+	if u.Host == "" || u.Scheme == "" {
 		return "", errors.New("host and scheme cannot be empty")
 	}
 
-	if !strings.HasSuffix(url_.Path, "/") {
-		url_.Path += "/"
+	if !strings.HasSuffix(u.Path, "/") {
+		u.Path += "/"
 	}
 
-	return url_.String(), nil
+	return u.String(), nil
 }

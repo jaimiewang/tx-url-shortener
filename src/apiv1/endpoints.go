@@ -2,7 +2,6 @@ package apiv1
 
 import (
 	"database/sql"
-	"encoding/json"
 	"github.com/gorilla/mux"
 	"net"
 	"net/http"
@@ -23,9 +22,9 @@ type shortURLResponse struct {
 
 func ShortURLEndpoint(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	shortURL := &model.ShortURL{}
+	shortURL := model.ShortURL{}
 
-	err := database.DbMap.SelectOne(shortURL, "SELECT * FROM urls WHERE code=?", vars["code"])
+	err := database.DbMap.SelectOne(&shortURL, "SELECT * FROM urls WHERE code=?", vars["code"])
 	if err == sql.ErrNoRows {
 		APIError(w, ErrNotFound.Error(), http.StatusNotFound)
 		return
@@ -52,9 +51,8 @@ type newShortURLResponse struct {
 }
 
 func NewShortURLEndpoint(w http.ResponseWriter, r *http.Request) {
-	requestData := &newShortURLRequest{}
-	err := json.NewDecoder(r.Body).Decode(requestData)
-	if err != nil {
+	requestData := newShortURLRequest{}
+	if err := util.ParseJsonForm(r, &requestData); err != nil {
 		APIError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -70,7 +68,7 @@ func NewShortURLEndpoint(w http.ResponseWriter, r *http.Request) {
 		remoteAddress = r.RemoteAddr
 	}
 
-	shortURL := &model.ShortURL{
+	shortURL := model.ShortURL{
 		Original:  originalURL,
 		IPAddress: remoteAddress,
 		Time:      time.Now().UTC().Unix(),
@@ -81,7 +79,7 @@ func NewShortURLEndpoint(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	err = database.DbMap.Insert(shortURL)
+	err = database.DbMap.Insert(&shortURL)
 	if err != nil {
 		panic(err)
 	}
