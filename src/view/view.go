@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 	"tx-url-shortener/config"
+	"tx-url-shortener/database"
 	"tx-url-shortener/model"
 	"tx-url-shortener/util"
 )
@@ -20,8 +21,9 @@ func IndexView(w http.ResponseWriter, r *http.Request) {
 
 func ShortURLView(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
+	shortURL := &model.ShortURL{}
 
-	shortURL, err := model.GetShortURL(vars["code"])
+	err := database.DbMap.SelectOne(shortURL, "SELECT * FROM urls WHERE code=?", vars["code"])
 	if err == sql.ErrNoRows {
 		http.NotFound(w, r)
 		return
@@ -30,7 +32,7 @@ func ShortURLView(w http.ResponseWriter, r *http.Request) {
 	}
 
 	shortURL.Counter++
-	err = model.SaveShortURL(shortURL)
+	_, err = database.DbMap.Update(&shortURL)
 	if err != nil {
 		panic(err)
 	}
@@ -68,7 +70,7 @@ func NewShortURLView(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	err = model.SaveShortURL(shortURL)
+	err = database.DbMap.Insert(shortURL)
 	if err != nil {
 		panic(err)
 	}

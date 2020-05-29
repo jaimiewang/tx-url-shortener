@@ -3,7 +3,6 @@ module tx-url-shortener
 go 1.14
 
 require (
-	github.com/coocood/freecache v1.1.0
 	github.com/go-gorp/gorp v2.2.0+incompatible // indirect
 	github.com/go-sql-driver/mysql v1.5.0 // indirect
 	github.com/gorilla/csrf v1.7.0

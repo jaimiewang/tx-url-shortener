@@ -1,11 +1,7 @@
 package util
 
 import (
-	"bytes"
-	"encoding/gob"
-	"encoding/json"
 	"errors"
-	"io"
 	"math/rand"
 	"net/url"
 	"strings"
@@ -29,26 +25,6 @@ func RandomString(n int, chars string) string {
 	return builder.String()
 }
 
-func Serialize(value interface{}) ([]byte, error) {
-	var buf bytes.Buffer
-
-	if err := gob.NewEncoder(&buf).Encode(value); err != nil {
-		return nil, err
-	}
-
-	return buf.Bytes(), nil
-}
-
-func Deserialize(b []byte, value interface{}) error {
-	buf := bytes.NewBuffer(b)
-
-	if err := gob.NewDecoder(buf).Decode(value); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func ValidateURL(u string) (string, error) {
 	url_, err := url.ParseRequestURI(u)
 	if err != nil {
@@ -64,14 +40,4 @@ func ValidateURL(u string) (string, error) {
 	}
 
 	return url_.String(), nil
-}
-
-func WriteJson(w io.Writer, i interface{}) error {
-	b, err := json.Marshal(i)
-	if err != nil {
-		return err
-	}
-
-	_, err = w.Write(b)
-	return err
 }

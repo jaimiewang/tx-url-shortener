@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 	"tx-url-shortener/config"
+	"tx-url-shortener/database"
 	"tx-url-shortener/model"
 	"tx-url-shortener/util"
 )
@@ -21,27 +22,24 @@ type shortURLResponse struct {
 }
 
 func ShortURLEndpoint(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
 	vars := mux.Vars(r)
+	shortURL := &model.ShortURL{}
 
-	shortURL, err := model.GetShortURL(vars["code"])
+	err := database.DbMap.SelectOne(shortURL, "SELECT * FROM urls WHERE code=?", vars["code"])
 	if err == sql.ErrNoRows {
-		APIError(w, ErrNotFound, http.StatusNotFound)
+		APIError(w, ErrNotFound.Error(), http.StatusNotFound)
 		return
 	} else if err != nil {
 		panic(err)
 	}
 
-	err = util.WriteJson(w, shortURLResponse{
+	util.WriteJsonResponse(w, shortURLResponse{
 		IPAddress: shortURL.IPAddress,
 		Counter:   shortURL.Counter,
 		Code:      shortURL.Code,
 		Time:      shortURL.Time,
 		Original:  shortURL.Original,
 	})
-	if err != nil {
-		panic(err)
-	}
 }
 
 type newShortURLRequest struct {
@@ -54,18 +52,16 @@ type newShortURLResponse struct {
 }
 
 func NewShortURLEndpoint(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
 	requestData := &newShortURLRequest{}
 	err := json.NewDecoder(r.Body).Decode(requestData)
 	if err != nil {
-		APIError(w, err, http.StatusBadRequest)
+		APIError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	originalURL, err := util.ValidateURL(requestData.URL)
 	if err != nil {
-		APIError(w, err, http.StatusBadRequest)
+		APIError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -85,16 +81,13 @@ func NewShortURLEndpoint(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	err = model.SaveShortURL(shortURL)
+	err = database.DbMap.Insert(shortURL)
 	if err != nil {
 		panic(err)
 	}
 
-	err = util.WriteJson(w, newShortURLResponse{
+	util.WriteJsonResponse(w, newShortURLResponse{
 		Code: shortURL.Code,
 		URL:  config.Config.ShortURLPrefix + "/" + shortURL.Code,
 	})
-	if err != nil {
-		panic(err)
-	}
 }

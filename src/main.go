@@ -20,7 +20,47 @@ import (
 	"tx-url-shortener/view"
 )
 
-func initHTTPServer() *http.Server {
+func main() {
+	rand.Seed(time.Now().UTC().UnixNano())
+
+	configFileFlag := flag.String("config", "config.yml", "Configuration file.")
+	generateAPIKeyFlag := flag.Bool("generate-api-key", false, "")
+	flag.Parse()
+
+	err := config.LoadConfig(*configFileFlag)
+	if err != nil {
+		panic(err)
+	}
+
+	err = database.InitDatabase()
+	if err != nil {
+		panic(err)
+	}
+
+	err = model.InitModels()
+	if err != nil {
+		panic(err)
+	}
+
+	if *generateAPIKeyFlag {
+		apiKey := &model.APIKey{
+			Time: time.Now().Unix(),
+		}
+
+		err := apiKey.GenerateToken()
+		if err != nil {
+			panic(err)
+		}
+
+		err = database.DbMap.Insert(apiKey)
+		if err != nil {
+			panic(err)
+		}
+
+		fmt.Printf("Your new API key is: %s\n", apiKey.Token)
+		os.Exit(0)
+	}
+
 	router := mux.NewRouter()
 	router.StrictSlash(true)
 	router.Use(handlers.ProxyHeaders)
@@ -40,59 +80,16 @@ func initHTTPServer() *http.Server {
 	viewRouter.HandleFunc("/", view.NewShortURLView).Methods("POST")
 	viewRouter.HandleFunc("/{code}", view.ShortURLView).Methods("GET")
 
-	apiv1Router.HandleFunc("/urls/{code}", apiv1.ShortURLEndpoint).Methods("GET")
 	apiv1Router.HandleFunc("/urls", apiv1.NewShortURLEndpoint).Methods("PUT")
+	apiv1Router.HandleFunc("/urls/{code}", apiv1.ShortURLEndpoint).Methods("GET")
 
 	staticRouter.PathPrefix("").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("static/"))))
 
-	return &http.Server{
+	server := &http.Server{
 		Addr:    config.Config.ListenAddress,
 		Handler: router,
 	}
-}
 
-func main() {
-	rand.Seed(time.Now().UTC().UnixNano())
-
-	configFile := flag.String("config", "config.yml", "Configuration file.")
-	generateAPIKey := flag.Bool("generate-api-key", false, "")
-	flag.Parse()
-
-	err := config.LoadConfig(*configFile)
-	if err != nil {
-		panic(err)
-	}
-
-	err = database.InitDatabase()
-	if err != nil {
-		panic(err)
-	}
-
-	err = model.InitModels()
-	if err != nil {
-		panic(err)
-	}
-
-	if *generateAPIKey {
-		apiKey := &model.APIKey{
-			Time: time.Now().Unix(),
-		}
-
-		err = apiKey.GenerateToken()
-		if err != nil {
-			panic(err)
-		}
-
-		err = model.SaveAPIKey(apiKey)
-		if err != nil {
-			panic(err)
-		}
-
-		fmt.Printf("Your new API key is: %s\n", apiKey.Token)
-		os.Exit(0)
-	}
-
-	server := initHTTPServer()
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
