@@ -1,4 +1,4 @@
-package apiv1
+package api
 
 import (
 	"errors"
@@ -12,7 +12,7 @@ type apiError struct {
 	Text string `json:"error"`
 }
 
-func APIError(w http.ResponseWriter, error string, code int) {
+func Error(w http.ResponseWriter, error string, code int) {
 	w.WriteHeader(code)
 	util.WriteJsonResponse(w, apiError{Text: error})
 }
@@ -21,11 +21,17 @@ var ErrEmptyAuthToken = errors.New("empty authorization token")
 var ErrInvalidAuthToken = errors.New("invalid authorization token")
 var ErrNotFound = errors.New("not found")
 
+func NotFoundHandler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		Error(w, ErrNotFound.Error(), http.StatusNotFound)
+	})
+}
+
 func AuthHandler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token := strings.TrimLeft(r.Header.Get("Authorization"), "Bearer ")
 		if token == "" {
-			APIError(w, ErrEmptyAuthToken.Error(), http.StatusUnauthorized)
+			Error(w, ErrEmptyAuthToken.Error(), http.StatusUnauthorized)
 			return
 		}
 
@@ -35,7 +41,7 @@ func AuthHandler(next http.Handler) http.Handler {
 		}
 
 		if ret == 0 {
-			APIError(w, ErrInvalidAuthToken.Error(), http.StatusForbidden)
+			Error(w, ErrInvalidAuthToken.Error(), http.StatusForbidden)
 			return
 		}
 
