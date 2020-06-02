@@ -1,4 +1,4 @@
-package apiv1
+package api
 
 import (
 	"database/sql"
@@ -26,7 +26,7 @@ func ShortURLEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	err := database.DbMap.SelectOne(&shortURL, "SELECT * FROM urls WHERE code=?", vars["code"])
 	if err == sql.ErrNoRows {
-		APIError(w, ErrNotFound.Error(), http.StatusNotFound)
+		http.NotFound(w, r)
 		return
 	} else if err != nil {
 		panic(err)
@@ -53,13 +53,13 @@ type newShortURLResponse struct {
 func NewShortURLEndpoint(w http.ResponseWriter, r *http.Request) {
 	requestData := newShortURLRequest{}
 	if err := util.ParseJsonForm(r, &requestData); err != nil {
-		APIError(w, err.Error(), http.StatusBadRequest)
+		Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	originalURL, err := util.ValidateURL(requestData.URL)
 	if err != nil {
-		APIError(w, err.Error(), http.StatusBadRequest)
+		Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 

@@ -7,9 +7,6 @@ database:
   port: 0
   name: "db.sqlite3"
 listen_address: ":8080"
-# For CSRF protection.
-secret: "uncQbYcM9CEv+pLnx55x4pZKYSUN2Xyo"
-# Value must be smaller than or equal to 11.
 base_code_length: 5
 short_url_prefix: "localhost:8080"
 cache_size: 10000000

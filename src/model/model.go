@@ -32,7 +32,7 @@ func (shortURL *ShortURL) GenerateCode() error {
 
 	for i := config.Config.BaseCodeLength; i <= 11; i++ {
 		for j := 0; j < 3; j++ {
-			urlCode = util.RandomString(i, util.AsciiLetters)
+			urlCode = util.RandomString(i)
 			ret, err := database.DbMap.SelectInt("SELECT COUNT(*) FROM urls WHERE code=?", urlCode)
 			if err != nil {
 				return err
@@ -51,7 +51,6 @@ success:
 }
 
 const APIKeySize = 20
-const APIKeyChars = util.AsciiLetters + util.Digits + util.SpecialChars
 
 type APIKey struct {
 	Model
@@ -67,7 +66,7 @@ func (apiKey *APIKey) GenerateToken() error {
 	var token string
 
 	for j := 0; j < 3; j++ {
-		token = util.RandomString(APIKeySize, APIKeyChars)
+		token = util.RandomString(APIKeySize)
 		ret, err := database.DbMap.SelectInt("SELECT COUNT(*) FROM api_keys WHERE token=?", token)
 		if err != nil {
 			return err

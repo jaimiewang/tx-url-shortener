@@ -16,7 +16,6 @@ type config struct {
 		Name     string `yaml:"name"`
 	} `yaml:"database"`
 	ListenAddress  string `yaml:"listen_address"`
-	Secret         string `yaml:"secret"`
 	BaseCodeLength int    `yaml:"base_code_length"`
 	ShortURLPrefix string `yaml:"short_url_prefix"`
 	CacheSize      int    `yaml:"cache_size"`
