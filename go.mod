@@ -12,6 +12,7 @@ require (
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible
 	github.com/poy/onpar v1.0.0 // indirect
 	github.com/stretchr/testify v1.5.1 // indirect
+	github.com/victorspringer/http-cache v0.0.0-20190721184638-fe78e97af707
 	github.com/ziutek/mymysql v1.5.4 // indirect
 	gopkg.in/gorp.v2 v2.2.0
 	gopkg.in/yaml.v2 v2.3.0

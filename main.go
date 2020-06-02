@@ -6,6 +6,8 @@ import (
 	"github.com/gorilla/csrf"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
+	cache "github.com/victorspringer/http-cache"
+	"github.com/victorspringer/http-cache/adapter/memory"
 	"log"
 	"math/rand"
 	"net/http"
@@ -61,6 +63,22 @@ func main() {
 		os.Exit(0)
 	}
 
+	memoryAdapter, err := memory.NewAdapter(
+		memory.AdapterWithAlgorithm(memory.LRU),
+		memory.AdapterWithCapacity(config.Config.CacheSize),
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	cacheClient, err := cache.NewClient(
+		cache.ClientWithAdapter(memoryAdapter),
+		cache.ClientWithTTL(10*time.Minute),
+	)
+	if err != nil {
+		panic(err)
+	}
+
 	router := mux.NewRouter()
 	router.StrictSlash(true)
 	router.Use(handlers.ProxyHeaders)
@@ -68,6 +86,7 @@ func main() {
 		return handlers.LoggingHandler(os.Stdout, next)
 	})
 	router.Use(handlers.RecoveryHandler())
+	router.Use(cacheClient.Middleware)
 
 	viewRouter := router.PathPrefix("/").Subrouter()
 	apiv1Router := router.PathPrefix("/api/v1").Subrouter()
