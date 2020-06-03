@@ -70,8 +70,8 @@ func initRouter(cacheClient *cache.Client) *mux.Router {
 	router.Use(cacheClient.Middleware)
 
 	basicRouter := router.PathPrefix("").Subrouter()
-
 	apiRouter := router.PathPrefix("/api").Subrouter()
+
 	apiRouter.Use(api.AuthHandler)
 	apiRouter.NotFoundHandler = api.NotFoundHandler()
 

@@ -36,7 +36,6 @@ curl -H "Authorization: Bearer <your-api-key>" \
 **Request**:
 ```shell script
 curl -H "Authorization: Bearer <your-api-key>" \
-     -H "Content-Type: application/json" \
      -X GET \
       http://localhost:8080/api/urls/<your-url-code>
 ```
