@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"flag"
 	"fmt"
 	"github.com/gorilla/handlers"
@@ -40,24 +41,51 @@ func initCacheClient() *cache.Client {
 	return cacheClient
 }
 
+func shortURLRedirectView(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	shortURL := model.ShortURL{}
+
+	err := database.DbMap.SelectOne(&shortURL, "SELECT * FROM urls WHERE code=?", vars["code"])
+	if err == sql.ErrNoRows {
+		http.NotFound(w, r)
+		return
+	} else if err != nil {
+		panic(err)
+	}
+
+	shortURL.Counter++
+	_, err = database.DbMap.Update(&shortURL)
+	if err != nil {
+		panic(err)
+	}
+
+	http.Redirect(w, r, shortURL.Original, http.StatusPermanentRedirect)
+}
+
 func initRouter(cacheClient *cache.Client) *mux.Router {
 	router := mux.NewRouter()
 	router.StrictSlash(true)
 	router.Use(handlers.ProxyHeaders)
 	router.Use(handlers.RecoveryHandler())
 	router.Use(cacheClient.Middleware)
-	router.Use(api.AuthHandler)
 
-	router.HandleFunc("/urls", api.NewShortURLEndpoint).Methods("PUT")
-	router.HandleFunc("/urls/{code}", api.ShortURLEndpoint).Methods("GET")
-	router.NotFoundHandler = api.NotFoundHandler()
+	basicRouter := router.PathPrefix("").Subrouter()
+
+	apiRouter := router.PathPrefix("/api").Subrouter()
+	apiRouter.Use(api.AuthHandler)
+	apiRouter.NotFoundHandler = api.NotFoundHandler()
+
+	basicRouter.HandleFunc("/{code}", shortURLRedirectView)
+
+	apiRouter.HandleFunc("/urls", api.NewShortURLEndpoint).Methods("PUT")
+	apiRouter.HandleFunc("/urls/{code}", api.ShortURLEndpoint).Methods("GET")
 
 	return router
 }
 
 func generateAPIKey() {
 	apiKey := &model.APIKey{
-		Time: time.Now().Unix(),
+		CreatedAt: time.Now().Unix(),
 	}
 
 	err := apiKey.GenerateToken()

@@ -36,7 +36,7 @@ func ShortURLEndpoint(w http.ResponseWriter, r *http.Request) {
 		IPAddress: shortURL.IPAddress,
 		Counter:   shortURL.Counter,
 		Code:      shortURL.Code,
-		Time:      shortURL.Time,
+		Time:      shortURL.CreatedAt,
 		Original:  shortURL.Original,
 	})
 }
@@ -71,7 +71,7 @@ func NewShortURLEndpoint(w http.ResponseWriter, r *http.Request) {
 	shortURL := model.ShortURL{
 		Original:  originalURL,
 		IPAddress: remoteAddress,
-		Time:      time.Now().UTC().Unix(),
+		CreatedAt: time.Now().UTC().Unix(),
 	}
 
 	err = shortURL.GenerateCode()

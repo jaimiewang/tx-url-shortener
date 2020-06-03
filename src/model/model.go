@@ -16,7 +16,7 @@ type Model struct {
 
 type ShortURL struct {
 	Model
-	Time      int64  `db:"time"`
+	CreatedAt int64  `db:"created_at"`
 	IPAddress string `db:"ip_addr, size:15"`
 	Original  string `db:"original, size:255"`
 	Code      string `db:"code, size:11"`
@@ -54,8 +54,8 @@ const APIKeySize = 20
 
 type APIKey struct {
 	Model
-	Time  int64  `db:"time"`
-	Token string `db:"token"`
+	CreatedAt int64  `db:"created_at"`
+	Token     string `db:"token"`
 }
 
 func (apiKey *APIKey) GenerateToken() error {
