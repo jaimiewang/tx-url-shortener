@@ -15,7 +15,7 @@ docker run -d -v $(pwd)/config.yml:/opt/tx-url-shortener/config.yml \
 docker exec tx-url-shortener /opt/tx-url-shortener/bin/tx-url-shortener -generate-api-key
 ```
 
-## Example usage
+## Endpoints
 ### Shorten new URL
 **Request**:
 ```shell script
