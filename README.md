@@ -1,8 +1,7 @@
 # tx-url-shortener
-
 Simple high performance URL shortener microservice written in Go.
 
-## Running as Docker container
+## Docker installation
 ```shell script
 docker build -t tx-url-shortener:1.0 .
 docker run -d -v $(pwd)/config.yml:/opt/tx-url-shortener/config.yml
@@ -13,5 +12,5 @@ docker run -d -v $(pwd)/config.yml:/opt/tx-url-shortener/config.yml
 ```
 
 ## Endpoints
-Actually, there aren't too many endpoints, exists only two basic for viewing data about
-and shortening URL.
+At present there are only two basic endpoints for viewing data about specified URL and
+for shortening URLs.

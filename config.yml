@@ -7,5 +7,5 @@ database:
   port: 0
   name: "db.sqlite3"
 base_code_length: 5
-short_url_prefix: "localhost:8080"
+short_url_prefix: "localhost"
 cache_size: 10000000
