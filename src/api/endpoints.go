@@ -16,7 +16,7 @@ type shortURLResponse struct {
 	IPAddress string `json:"ip_address"`
 	Counter   int64  `json:"counter"`
 	Code      string `json:"code"`
-	Time      int64  `json:"time"`
+	CreatedAt int64  `json:"created_at"`
 	Original  string `json:"original"`
 }
 
@@ -36,7 +36,7 @@ func ShortURLEndpoint(w http.ResponseWriter, r *http.Request) {
 		IPAddress: shortURL.IPAddress,
 		Counter:   shortURL.Counter,
 		Code:      shortURL.Code,
-		Time:      shortURL.CreatedAt,
+		CreatedAt: shortURL.CreatedAt,
 		Original:  shortURL.Original,
 	})
 }

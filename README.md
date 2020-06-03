@@ -1,16 +1,52 @@
 # tx-url-shortener
 Simple high performance URL shortener microservice written in Go.
 
-## Docker installation
+## Installation
 ```shell script
 docker build -t tx-url-shortener:1.0 .
-docker run -d -v $(pwd)/config.yml:/opt/tx-url-shortener/config.yml
-              -v $(pwd)/db.sqlite3:/opt/tx-url-shortener/db.sqlite3
-              --publish 8080:8080
-              --name tx-url-shortener
+docker run -d -v $(pwd)/config.yml:/opt/tx-url-shortener/config.yml \
+              --publish 8080:8080 \
+              --name tx-url-shortener \
               tx-url-shortener:1.0
 ```
 
-## Endpoints
-At present there are only two basic endpoints for viewing data about specified URL and
-for shortening URLs.
+## Generate API key
+```shell script
+docker exec tx-url-shortener /opt/tx-url-shortener/bin/tx-url-shortener -generate-api-key
+```
+
+## Example usage
+### Shorten new URL
+**Request**:
+```shell script
+curl -H "Authorization: Bearer <your-api-key>" \
+     -H "Content-Type: application/json" \
+     -X PUT \
+     -d '{"url": "https://google.pl/"}' \
+      http://localhost:8080/api/urls
+```
+**Response**:
+```json
+{
+  "code": "SPHTk",
+  "url": "http://localhost:8080/SPHTk"
+}
+```
+### Get data about specified URL
+**Request**:
+```shell script
+curl -H "Authorization: Bearer <your-api-key>" \
+     -H "Content-Type: application/json" \
+     -X GET \
+      http://localhost:8080/api/urls/<your-url-code>
+```
+**Response**:
+```json
+{
+  "ip_address": "172.17.0.1",
+  "counter": 1,
+  "code": "SPHTk",
+  "created_at": 1591187797,
+  "original": "https://google.pl/"
+}
+```

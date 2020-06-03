@@ -64,9 +64,10 @@ func (apiKey *APIKey) GenerateToken() error {
 	}
 
 	var token string
+	var err error
 
 	for j := 0; j < 3; j++ {
-		token, err := util.RandomToken(APIKeySize)
+		token, err = util.RandomToken(APIKeySize)
 		if err != nil {
 			return err
 		}
