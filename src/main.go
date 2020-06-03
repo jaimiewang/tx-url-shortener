@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"flag"
 	"fmt"
 	"github.com/gorilla/handlers"
@@ -19,6 +18,7 @@ import (
 	"tx-url-shortener/config"
 	"tx-url-shortener/database"
 	"tx-url-shortener/model"
+	"tx-url-shortener/view"
 )
 
 func initCacheClient() *cache.Client {
@@ -41,27 +41,6 @@ func initCacheClient() *cache.Client {
 	return cacheClient
 }
 
-func shortURLRedirectView(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	shortURL := model.ShortURL{}
-
-	err := database.DbMap.SelectOne(&shortURL, "SELECT * FROM urls WHERE code=?", vars["code"])
-	if err == sql.ErrNoRows {
-		http.NotFound(w, r)
-		return
-	} else if err != nil {
-		panic(err)
-	}
-
-	shortURL.Counter++
-	_, err = database.DbMap.Update(&shortURL)
-	if err != nil {
-		panic(err)
-	}
-
-	http.Redirect(w, r, shortURL.Original, http.StatusPermanentRedirect)
-}
-
 func initRouter(cacheClient *cache.Client) *mux.Router {
 	router := mux.NewRouter()
 	router.StrictSlash(true)
@@ -69,14 +48,14 @@ func initRouter(cacheClient *cache.Client) *mux.Router {
 	router.Use(handlers.RecoveryHandler())
 	router.Use(cacheClient.Middleware)
 
-	basicRouter := router.PathPrefix("").Subrouter()
+	viewRouter := router.PathPrefix("").Subrouter()
 	apiRouter := router.PathPrefix("/api").Subrouter()
 
 	apiRouter.Use(api.AuthHandler)
 	apiRouter.NotFoundHandler = api.NotFoundHandler()
+	viewRouter.NotFoundHandler = view.NotFoundHandler()
 
-	basicRouter.HandleFunc("/{code}", shortURLRedirectView)
-
+	viewRouter.HandleFunc("/{code}", view.ShortURLRedirectView)
 	apiRouter.HandleFunc("/urls", api.NewShortURLEndpoint).Methods("PUT")
 	apiRouter.HandleFunc("/urls/{code}", api.ShortURLEndpoint).Methods("GET")
 

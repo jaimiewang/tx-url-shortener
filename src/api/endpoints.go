@@ -26,13 +26,13 @@ func ShortURLEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	err := database.DbMap.SelectOne(&shortURL, "SELECT * FROM urls WHERE code=?", vars["code"])
 	if err == sql.ErrNoRows {
-		http.NotFound(w, r)
+		NotFound(w, r)
 		return
 	} else if err != nil {
 		panic(err)
 	}
 
-	util.WriteJsonResponse(w, shortURLResponse{
+	util.WriteAPIResponse(w, shortURLResponse{
 		IPAddress: shortURL.IPAddress,
 		Counter:   shortURL.Counter,
 		Code:      shortURL.Code,
@@ -52,7 +52,7 @@ type newShortURLResponse struct {
 
 func NewShortURLEndpoint(w http.ResponseWriter, r *http.Request) {
 	requestData := newShortURLRequest{}
-	if err := util.ParseJsonForm(r, &requestData); err != nil {
+	if err := util.ParseAPIForm(r, &requestData); err != nil {
 		Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -84,7 +84,7 @@ func NewShortURLEndpoint(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	util.WriteJsonResponse(w, newShortURLResponse{
+	util.WriteAPIResponse(w, newShortURLResponse{
 		Code: shortURL.Code,
 		URL:  config.Config.ShortURLPrefix + "/" + shortURL.Code,
 	})

@@ -15,9 +15,10 @@ type config struct {
 		Port     uint16 `yaml:"port"`
 		Name     string `yaml:"name"`
 	} `yaml:"database"`
-	BaseCodeLength int    `yaml:"base_code_length"`
-	ShortURLPrefix string `yaml:"short_url_prefix"`
-	CacheSize      int    `yaml:"cache_size"`
+	BaseCodeLength   int    `yaml:"base_code_length"`
+	ShortURLPrefix   string `yaml:"short_url_prefix"`
+	NotFoundRedirect string `yaml:"not_found_redirect"`
+	CacheSize        int    `yaml:"cache_size"`
 }
 
 var Config = &config{}

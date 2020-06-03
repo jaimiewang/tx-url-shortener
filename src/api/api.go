@@ -14,17 +14,19 @@ type apiError struct {
 
 func Error(w http.ResponseWriter, error string, code int) {
 	w.WriteHeader(code)
-	util.WriteJsonResponse(w, apiError{Text: error})
+	util.WriteAPIResponse(w, apiError{Text: error})
+}
+
+func NotFound(w http.ResponseWriter, _ *http.Request) {
+	Error(w, "not found", http.StatusNotFound)
+}
+
+func NotFoundHandler() http.Handler {
+	return http.HandlerFunc(NotFound)
 }
 
 var ErrEmptyAuthToken = errors.New("empty authorization token")
 var ErrInvalidAuthToken = errors.New("invalid authorization token")
-
-func NotFoundHandler() http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		Error(w, "not found", http.StatusNotFound)
-	})
-}
 
 func AuthHandler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
