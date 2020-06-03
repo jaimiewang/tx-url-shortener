@@ -1,10 +1,22 @@
 package util
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
 )
+
+func RandomToken(n int) (string, error) {
+	b := make([]byte, n)
+	_, err := rand.Read(b)
+	if err != nil {
+		return "", err
+	}
+
+	return base64.RawURLEncoding.EncodeToString(b), nil
+}
 
 func ParseJsonForm(r *http.Request, i interface{}) error {
 	contentType := r.Header.Get("Content-Type")

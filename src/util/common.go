@@ -1,19 +1,26 @@
 package util
 
 import (
-	"crypto/rand"
-	"encoding/hex"
 	"errors"
+	"math/rand"
 	"net/url"
 	"strings"
 )
 
-func RandomString(length int) string {
-	b := make([]byte, length)
-	if _, err := rand.Read(b); err != nil {
-		return ""
+const (
+	AsciiLowercase = "abcdefghijklmnopqrstuvwxyz"
+	AsciiUppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	AsciiLetters   = AsciiLowercase + AsciiUppercase
+)
+
+func RandomString(n int, chars string) string {
+	builder := strings.Builder{}
+	runes := []rune(chars)
+	for i := 0; i < n; i++ {
+		builder.WriteRune(runes[rand.Intn(len(runes))])
 	}
-	return hex.EncodeToString(b)
+
+	return builder.String()
 }
 
 func ValidateURL(rawurl string) (string, error) {

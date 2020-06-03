@@ -20,7 +20,7 @@ import (
 	"tx-url-shortener/model"
 )
 
-func initRouter() *mux.Router {
+func initCacheClient() *cache.Client {
 	memoryAdapter, err := memory.NewAdapter(
 		memory.AdapterWithAlgorithm(memory.LRU),
 		memory.AdapterWithCapacity(config.Config.CacheSize),
@@ -31,18 +31,19 @@ func initRouter() *mux.Router {
 
 	cacheClient, err := cache.NewClient(
 		cache.ClientWithAdapter(memoryAdapter),
-		cache.ClientWithTTL(10*time.Minute),
+		cache.ClientWithTTL(3*time.Minute),
 	)
 	if err != nil {
 		panic(err)
 	}
 
+	return cacheClient
+}
+
+func initRouter(cacheClient *cache.Client) *mux.Router {
 	router := mux.NewRouter()
 	router.StrictSlash(true)
 	router.Use(handlers.ProxyHeaders)
-	router.Use(func(next http.Handler) http.Handler {
-		return handlers.LoggingHandler(os.Stdout, next)
-	})
 	router.Use(handlers.RecoveryHandler())
 	router.Use(cacheClient.Middleware)
 	router.Use(api.AuthHandler)
@@ -99,9 +100,10 @@ func main() {
 		return
 	}
 
-	router := initRouter()
+	cacheClient := initCacheClient()
+	router := initRouter(cacheClient)
 	server := &http.Server{
-		Addr:    config.Config.ListenAddress,
+		Addr:    ":8080",
 		Handler: router,
 	}
 

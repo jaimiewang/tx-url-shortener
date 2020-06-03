@@ -9,4 +9,5 @@ USER tx-url-shortener
 WORKDIR /opt/tx-url-shortener/bin
 COPY --from=build /build/bin/tx-url-shortener .
 WORKDIR ..
+EXPOSE 8080
 ENTRYPOINT ["./bin/tx-url-shortener"]

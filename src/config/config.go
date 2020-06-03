@@ -1,7 +1,7 @@
 package config
 
 import (
-	"errors"
+	"fmt"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 )
@@ -15,7 +15,6 @@ type config struct {
 		Port     uint16 `yaml:"port"`
 		Name     string `yaml:"name"`
 	} `yaml:"database"`
-	ListenAddress  string `yaml:"listen_address"`
 	BaseCodeLength int    `yaml:"base_code_length"`
 	ShortURLPrefix string `yaml:"short_url_prefix"`
 	CacheSize      int    `yaml:"cache_size"`
@@ -35,7 +34,7 @@ func LoadConfig(filename string) error {
 	}
 
 	if Config.BaseCodeLength > 11 {
-		return errors.New("base_code_length must be smaller than or equal to 11")
+		return fmt.Errorf("base_code_length must be smaller than or equal to 11, got: %d", Config.BaseCodeLength)
 	}
 
 	return nil

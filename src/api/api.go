@@ -19,11 +19,10 @@ func Error(w http.ResponseWriter, error string, code int) {
 
 var ErrEmptyAuthToken = errors.New("empty authorization token")
 var ErrInvalidAuthToken = errors.New("invalid authorization token")
-var ErrNotFound = errors.New("not found")
 
 func NotFoundHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		Error(w, ErrNotFound.Error(), http.StatusNotFound)
+		Error(w, "not found", http.StatusNotFound)
 	})
 }
 
