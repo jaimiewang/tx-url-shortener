@@ -7,4 +7,5 @@ database:
 base_code_length: 5
 short_url_prefix: "http://localhost:8080"
 not_found_redirect: "https://google.pl"
+index_redirect: "https://google.pl"
 cache_size: 10000000

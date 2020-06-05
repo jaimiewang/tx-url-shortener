@@ -55,6 +55,7 @@ func initRouter(cacheClient *cache.Client) *mux.Router {
 	apiRouter.NotFoundHandler = api.NotFoundHandler()
 	viewRouter.NotFoundHandler = view.NotFoundHandler()
 
+	viewRouter.HandleFunc("/", view.IndexView)
 	viewRouter.HandleFunc("/{code}", view.ShortURLRedirectView)
 	apiRouter.HandleFunc("/urls", api.NewShortURLEndpoint).Methods("PUT")
 	apiRouter.HandleFunc("/urls/{code}", api.ShortURLEndpoint).Methods("GET")

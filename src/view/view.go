@@ -17,6 +17,10 @@ func NotFoundHandler() http.Handler {
 	return http.HandlerFunc(NotFound)
 }
 
+func IndexView(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, config.Config.IndexRedirect, http.StatusPermanentRedirect)
+}
+
 func ShortURLRedirectView(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	shortURL := model.ShortURL{}

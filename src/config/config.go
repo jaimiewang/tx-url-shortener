@@ -18,6 +18,7 @@ type config struct {
 	BaseCodeLength   int    `yaml:"base_code_length"`
 	ShortURLPrefix   string `yaml:"short_url_prefix"`
 	NotFoundRedirect string `yaml:"not_found_redirect"`
+	IndexRedirect    string `yaml:"index_redirect"`
 	CacheSize        int    `yaml:"cache_size"`
 }
 
