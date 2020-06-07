@@ -18,6 +18,7 @@ type shortURLResponse struct {
 	Code      string `json:"code"`
 	CreatedAt int64  `json:"created_at"`
 	Original  string `json:"original"`
+	URL       string `json:"url"`
 }
 
 func ShortURLEndpoint(w http.ResponseWriter, r *http.Request) {
@@ -38,6 +39,7 @@ func ShortURLEndpoint(w http.ResponseWriter, r *http.Request) {
 		Code:      shortURL.Code,
 		CreatedAt: shortURL.CreatedAt,
 		Original:  shortURL.Original,
+		URL:       config.Config.ShortURLPrefix + "/" + shortURL.Code,
 	})
 }
 
@@ -107,6 +109,7 @@ func NewShortURLEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	err = trans.Commit()
 	if err != nil {
+		_ = trans.Rollback()
 		panic(err)
 	}
 

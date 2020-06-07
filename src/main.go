@@ -62,6 +62,7 @@ func generateAPIKey() {
 
 	err = trans.Commit()
 	if err != nil {
+		_ = trans.Rollback()
 		panic(err)
 	}
 
