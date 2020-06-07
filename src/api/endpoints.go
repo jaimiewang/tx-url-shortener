@@ -86,6 +86,7 @@ func NewShortURLEndpoint(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
+	statusCode := http.StatusCreated
 	create := !doubled
 	if create {
 		err = shortURL.GenerateCode(trans)
@@ -101,6 +102,7 @@ func NewShortURLEndpoint(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		shortURL = originalShortURL
+		statusCode = http.StatusNotModified
 	}
 
 	err = trans.Commit()
@@ -108,6 +110,7 @@ func NewShortURLEndpoint(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
+	w.WriteHeader(statusCode)
 	WriteAPIResponse(w, newShortURLResponse{
 		Code:    shortURL.Code,
 		URL:     config.Config.ShortURLPrefix + "/" + shortURL.Code,
