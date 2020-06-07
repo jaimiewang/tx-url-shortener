@@ -3,11 +3,11 @@ Simple high performance URL shortener microservice written in Go.
 
 ## Installation
 ```shell script
-docker build -t tx-url-shortener:1.0.1 .
+docker build -t tx-url-shortener:1.0.2 .
 docker run -d -v $(pwd)/config.yml:/opt/tx-url-shortener/config.yml \
               --publish 8080:8080 \
               --name tx-url-shortener \
-              tx-url-shortener:1.0.1
+              tx-url-shortener:1.0.2
 ```
 
 ## Generate API key
@@ -29,7 +29,8 @@ curl -H "Authorization: Bearer <your-api-key>" \
 ```json
 {
   "code": "SPHTk",
-  "url": "http://localhost:8080/SPHTk"
+  "url": "http://localhost:8080/SPHTk",
+  "created": true
 }
 ```
 ### Get data about specified URL

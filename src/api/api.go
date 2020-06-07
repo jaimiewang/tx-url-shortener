@@ -1,20 +1,43 @@
 package api
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 	"tx-url-shortener/database"
-	"tx-url-shortener/util"
 )
 
-type apiError struct {
-	Text string `json:"error"`
+func ParseAPIForm(r *http.Request, i interface{}) error {
+	contentType := r.Header.Get("Content-Type")
+	if contentType != "application/json" {
+		return fmt.Errorf("not supported content-type: %s", contentType)
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(i); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func WriteAPIResponse(w http.ResponseWriter, i interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+
+	b, err := json.Marshal(i)
+	if err != nil {
+		return
+	}
+
+	_, _ = w.Write(b)
 }
 
 func Error(w http.ResponseWriter, error string, code int) {
 	w.WriteHeader(code)
-	util.WriteAPIResponse(w, apiError{Text: error})
+	WriteAPIResponse(w, map[string]interface{}{
+		"error": error,
+	})
 }
 
 func NotFound(w http.ResponseWriter, _ *http.Request) {

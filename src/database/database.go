@@ -2,7 +2,7 @@ package database
 
 import (
 	"database/sql"
-	"errors"
+	"fmt"
 	_ "github.com/mattn/go-sqlite3"
 	"gopkg.in/gorp.v2"
 	"strings"
@@ -16,13 +16,13 @@ func InitDatabase() error {
 	var dataSourceName string
 	var dialect gorp.Dialect
 
-	switch strings.ToLower(config.Config.Database.Engine) {
+	switch dbEngine := strings.ToLower(config.Config.Database.Engine); dbEngine {
 	case "sqlite3":
 		driverName = "sqlite3"
 		dataSourceName = config.Config.Database.Name
 		dialect = gorp.SqliteDialect{}
 	default:
-		return errors.New("invalid database engine")
+		return fmt.Errorf("not supported database engine: %s", dbEngine)
 	}
 
 	db, err := sql.Open(driverName, dataSourceName)

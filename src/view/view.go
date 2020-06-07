@@ -4,37 +4,37 @@ import (
 	"database/sql"
 	"github.com/gorilla/mux"
 	"net/http"
-	"tx-url-shortener/config"
 	"tx-url-shortener/database"
 	"tx-url-shortener/model"
 )
 
-func NotFound(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, config.Config.NotFoundRedirect, http.StatusPermanentRedirect)
-}
-
-func NotFoundHandler() http.Handler {
-	return http.HandlerFunc(NotFound)
-}
-
-func IndexView(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, config.Config.IndexRedirect, http.StatusPermanentRedirect)
-}
-
 func ShortURLRedirectView(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	shortURL := model.ShortURL{}
+	shortURL := &model.ShortURL{}
 
-	err := database.DbMap.SelectOne(&shortURL, "SELECT * FROM urls WHERE code=?", vars["code"])
+	trans, err := database.DbMap.Begin()
+	if err != nil {
+		panic(err)
+	}
+
+	err = trans.SelectOne(shortURL, "SELECT * FROM urls WHERE code=?", vars["code"])
 	if err == sql.ErrNoRows {
-		NotFound(w, r)
+		_ = trans.Rollback()
+		http.NotFound(w, r)
 		return
 	} else if err != nil {
+		_ = trans.Rollback()
 		panic(err)
 	}
 
 	shortURL.Counter++
-	_, err = database.DbMap.Update(&shortURL)
+	_, err = trans.Update(shortURL)
+	if err != nil {
+		_ = trans.Rollback()
+		panic(err)
+	}
+
+	err = trans.Commit()
 	if err != nil {
 		panic(err)
 	}

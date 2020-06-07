@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
-	cache "github.com/victorspringer/http-cache"
-	"github.com/victorspringer/http-cache/adapter/memory"
 	"log"
 	"math/rand"
 	"net/http"
@@ -21,41 +19,18 @@ import (
 	"tx-url-shortener/view"
 )
 
-func initCacheClient() *cache.Client {
-	memoryAdapter, err := memory.NewAdapter(
-		memory.AdapterWithAlgorithm(memory.LRU),
-		memory.AdapterWithCapacity(config.Config.CacheSize),
-	)
-	if err != nil {
-		panic(err)
-	}
-
-	cacheClient, err := cache.NewClient(
-		cache.ClientWithAdapter(memoryAdapter),
-		cache.ClientWithTTL(3*time.Minute),
-	)
-	if err != nil {
-		panic(err)
-	}
-
-	return cacheClient
-}
-
-func initRouter(cacheClient *cache.Client) *mux.Router {
+func initRouter() *mux.Router {
 	router := mux.NewRouter()
 	router.StrictSlash(true)
 	router.Use(handlers.ProxyHeaders)
 	router.Use(handlers.RecoveryHandler())
-	router.Use(cacheClient.Middleware)
 
 	viewRouter := router.PathPrefix("").Subrouter()
 	apiRouter := router.PathPrefix("/api").Subrouter()
 
 	apiRouter.Use(api.AuthHandler)
 	apiRouter.NotFoundHandler = api.NotFoundHandler()
-	viewRouter.NotFoundHandler = view.NotFoundHandler()
 
-	viewRouter.HandleFunc("/", view.IndexView)
 	viewRouter.HandleFunc("/{code}", view.ShortURLRedirectView)
 	apiRouter.HandleFunc("/urls", api.NewShortURLEndpoint).Methods("PUT")
 	apiRouter.HandleFunc("/urls/{code}", api.ShortURLEndpoint).Methods("GET")
@@ -68,12 +43,24 @@ func generateAPIKey() {
 		CreatedAt: time.Now().Unix(),
 	}
 
-	err := apiKey.GenerateToken()
+	trans, err := database.DbMap.Begin()
 	if err != nil {
 		panic(err)
 	}
 
-	err = database.DbMap.Insert(apiKey)
+	err = apiKey.GenerateToken(trans)
+	if err != nil {
+		_ = trans.Rollback()
+		panic(err)
+	}
+
+	err = trans.Insert(apiKey)
+	if err != nil {
+		_ = trans.Rollback()
+		panic(err)
+	}
+
+	err = trans.Commit()
 	if err != nil {
 		panic(err)
 	}
@@ -108,8 +95,7 @@ func main() {
 		return
 	}
 
-	cacheClient := initCacheClient()
-	router := initRouter(cacheClient)
+	router := initRouter()
 	server := &http.Server{
 		Addr:    ":8080",
 		Handler: router,

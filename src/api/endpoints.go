@@ -22,9 +22,9 @@ type shortURLResponse struct {
 
 func ShortURLEndpoint(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	shortURL := model.ShortURL{}
+	shortURL := &model.ShortURL{}
 
-	err := database.DbMap.SelectOne(&shortURL, "SELECT * FROM urls WHERE code=?", vars["code"])
+	err := database.DbMap.SelectOne(shortURL, "SELECT * FROM urls WHERE code=?", vars["code"])
 	if err == sql.ErrNoRows {
 		NotFound(w, r)
 		return
@@ -32,7 +32,7 @@ func ShortURLEndpoint(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	util.WriteAPIResponse(w, shortURLResponse{
+	WriteAPIResponse(w, shortURLResponse{
 		IPAddress: shortURL.IPAddress,
 		Counter:   shortURL.Counter,
 		Code:      shortURL.Code,
@@ -46,13 +46,14 @@ type newShortURLRequest struct {
 }
 
 type newShortURLResponse struct {
-	Code string `json:"code"`
-	URL  string `json:"url"`
+	Code    string `json:"code"`
+	URL     string `json:"url"`
+	Created bool   `json:"created"`
 }
 
 func NewShortURLEndpoint(w http.ResponseWriter, r *http.Request) {
-	requestData := newShortURLRequest{}
-	if err := util.ParseAPIForm(r, &requestData); err != nil {
+	requestData := &newShortURLRequest{}
+	if err := ParseAPIForm(r, requestData); err != nil {
 		Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -68,24 +69,48 @@ func NewShortURLEndpoint(w http.ResponseWriter, r *http.Request) {
 		remoteAddress = r.RemoteAddr
 	}
 
-	shortURL := model.ShortURL{
+	shortURL := &model.ShortURL{
 		Original:  originalURL,
 		IPAddress: remoteAddress,
 		CreatedAt: time.Now().UTC().Unix(),
 	}
 
-	err = shortURL.GenerateCode()
+	trans, err := database.DbMap.Begin()
 	if err != nil {
 		panic(err)
 	}
 
-	err = database.DbMap.Insert(&shortURL)
+	doubled, originalShortURL, err := shortURL.IsDoubled(trans)
+	if err != nil {
+		_ = trans.Rollback()
+		panic(err)
+	}
+
+	create := !doubled
+	if create {
+		err = shortURL.GenerateCode(trans)
+		if err != nil {
+			_ = trans.Rollback()
+			panic(err)
+		}
+
+		err = trans.Insert(shortURL)
+		if err != nil {
+			_ = trans.Rollback()
+			panic(err)
+		}
+	} else {
+		shortURL = originalShortURL
+	}
+
+	err = trans.Commit()
 	if err != nil {
 		panic(err)
 	}
 
-	util.WriteAPIResponse(w, newShortURLResponse{
-		Code: shortURL.Code,
-		URL:  config.Config.ShortURLPrefix + "/" + shortURL.Code,
+	WriteAPIResponse(w, newShortURLResponse{
+		Code:    shortURL.Code,
+		URL:     config.Config.ShortURLPrefix + "/" + shortURL.Code,
+		Created: create,
 	})
 }

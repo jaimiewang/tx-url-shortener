@@ -1,14 +1,17 @@
 package model
 
 import (
+	"crypto/rand"
+	"database/sql"
+	"encoding/base64"
 	"errors"
+	"gopkg.in/gorp.v2"
 	"tx-url-shortener/config"
 	"tx-url-shortener/database"
 	"tx-url-shortener/util"
 )
 
-var ErrAlreadyInDatabase = errors.New("already stored in database")
-var ErrCannotBeGenerated = errors.New("cannot be generated")
+var ErrCannotBeGenerated = errors.New("model: cannot be generated")
 
 type Model struct {
 	ID int64 `db:"id, primarykey, autoincrement"`
@@ -23,17 +26,13 @@ type ShortURL struct {
 	Counter   int64  `db:"counter"`
 }
 
-func (shortURL *ShortURL) GenerateCode() error {
-	if shortURL.ID != 0 {
-		return ErrAlreadyInDatabase
-	}
-
+func (shortURL *ShortURL) GenerateCode(trans *gorp.Transaction) error {
 	var urlCode string
 
 	for i := config.Config.BaseCodeLength; i <= 11; i++ {
 		for j := 0; j < 3; j++ {
 			urlCode = util.RandomString(i, util.AsciiLetters)
-			ret, err := database.DbMap.SelectInt("SELECT COUNT(*) FROM urls WHERE code=?", urlCode)
+			ret, err := trans.SelectInt("SELECT COUNT(*) FROM urls WHERE code=?", urlCode)
 			if err != nil {
 				return err
 			}
@@ -50,6 +49,18 @@ success:
 	return nil
 }
 
+func (shortURL *ShortURL) IsDoubled(trans *gorp.Transaction) (bool, *ShortURL, error) {
+	originalShortURL := &ShortURL{}
+	err := trans.SelectOne(originalShortURL, "SELECT * FROM urls WHERE original=?", shortURL.Original)
+	if err == sql.ErrNoRows {
+		return false, nil, nil
+	} else if err != nil {
+		return false, nil, err
+	}
+
+	return true, originalShortURL, nil
+}
+
 const APIKeySize = 20
 
 type APIKey struct {
@@ -58,21 +69,27 @@ type APIKey struct {
 	Token     string `db:"token"`
 }
 
-func (apiKey *APIKey) GenerateToken() error {
-	if apiKey.ID != 0 {
-		return ErrAlreadyInDatabase
+func RandomToken(n int) (string, error) {
+	b := make([]byte, n)
+	_, err := rand.Read(b)
+	if err != nil {
+		return "", err
 	}
 
+	return base64.RawURLEncoding.EncodeToString(b), nil
+}
+
+func (apiKey *APIKey) GenerateToken(trans *gorp.Transaction) error {
 	var token string
 	var err error
 
 	for j := 0; j < 3; j++ {
-		token, err = util.RandomToken(APIKeySize)
+		token, err = RandomToken(APIKeySize)
 		if err != nil {
 			return err
 		}
 
-		ret, err := database.DbMap.SelectInt("SELECT COUNT(*) FROM api_keys WHERE token=?", token)
+		ret, err := trans.SelectInt("SELECT COUNT(*) FROM api_keys WHERE token=?", token)
 		if err != nil {
 			return err
 		}
