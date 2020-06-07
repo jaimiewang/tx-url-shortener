@@ -12,15 +12,6 @@ import (
 	"tx-url-shortener/util"
 )
 
-type shortURLResponse struct {
-	IPAddress string `json:"ip_address"`
-	Counter   int64  `json:"counter"`
-	Code      string `json:"code"`
-	CreatedAt int64  `json:"created_at"`
-	Original  string `json:"original"`
-	URL       string `json:"url"`
-}
-
 func ShortURLEndpoint(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	shortURL := &model.ShortURL{}
@@ -33,7 +24,7 @@ func ShortURLEndpoint(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	WriteAPIResponse(w, shortURLResponse{
+	WriteAPIResponse(w, ShortURL{
 		IPAddress: shortURL.IPAddress,
 		Counter:   shortURL.Counter,
 		Code:      shortURL.Code,
@@ -43,18 +34,8 @@ func ShortURLEndpoint(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-type newShortURLRequest struct {
-	URL string `json:"url"`
-}
-
-type newShortURLResponse struct {
-	Code    string `json:"code"`
-	URL     string `json:"url"`
-	Created bool   `json:"created"`
-}
-
 func NewShortURLEndpoint(w http.ResponseWriter, r *http.Request) {
-	requestData := &newShortURLRequest{}
+	requestData := &ShortenURLForm{}
 	if err := ParseAPIForm(r, requestData); err != nil {
 		Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -89,8 +70,8 @@ func NewShortURLEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	statusCode := http.StatusCreated
-	create := !doubled
-	if create {
+	created := !doubled
+	if created {
 		err = shortURL.GenerateCode(trans)
 		if err != nil {
 			_ = trans.Rollback()
@@ -114,9 +95,12 @@ func NewShortURLEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(statusCode)
-	WriteAPIResponse(w, newShortURLResponse{
-		Code:    shortURL.Code,
-		URL:     config.Config.ShortURLPrefix + "/" + shortURL.Code,
-		Created: create,
+	WriteAPIResponse(w, ShortURL{
+		IPAddress: shortURL.IPAddress,
+		Counter:   shortURL.Counter,
+		Code:      shortURL.Code,
+		CreatedAt: shortURL.CreatedAt,
+		Original:  shortURL.Original,
+		URL:       config.Config.ShortURLPrefix + "/" + shortURL.Code,
 	})
 }

@@ -61,7 +61,7 @@ func (shortURL *ShortURL) IsDoubled(trans *gorp.Transaction) (bool, *ShortURL, e
 	return true, originalShortURL, nil
 }
 
-const APIKeySize = 20
+const APITokenSize = 20
 
 type APIKey struct {
 	Model
@@ -84,7 +84,7 @@ func (apiKey *APIKey) GenerateToken(trans *gorp.Transaction) error {
 	var err error
 
 	for j := 0; j < 3; j++ {
-		token, err = RandomToken(APIKeySize)
+		token, err = RandomToken(APITokenSize)
 		if err != nil {
 			return err
 		}
