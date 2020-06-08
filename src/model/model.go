@@ -23,7 +23,7 @@ type ShortURL struct {
 	IPAddress string `db:"ip_addr, size:15"`
 	Original  string `db:"original, size:255"`
 	Code      string `db:"code, size:11"`
-	Counter   int64  `db:"counter"`
+	Views     int64  `db:"views"`
 }
 
 func (shortURL *ShortURL) GenerateCode(trans *gorp.Transaction) error {

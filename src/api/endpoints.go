@@ -26,7 +26,7 @@ func ShortURLEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	WriteAPIResponse(w, ShortURL{
 		IPAddress: shortURL.IPAddress,
-		Counter:   shortURL.Counter,
+		Views:     shortURL.Views,
 		Code:      shortURL.Code,
 		CreatedAt: shortURL.CreatedAt,
 		Original:  shortURL.Original,
@@ -97,7 +97,7 @@ func NewShortURLEndpoint(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(statusCode)
 	WriteAPIResponse(w, ShortURL{
 		IPAddress: shortURL.IPAddress,
-		Counter:   shortURL.Counter,
+		Views:     shortURL.Views,
 		Code:      shortURL.Code,
 		CreatedAt: shortURL.CreatedAt,
 		Original:  shortURL.Original,

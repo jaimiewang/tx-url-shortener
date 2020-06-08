@@ -10,7 +10,7 @@ docker run -d -v $(pwd)/config.yml:/opt/tx-url-shortener/config.yml \
               tx-url-shortener:1.0.3
 ```
 
-## Generate API key
+## Generate new API key
 ```shell script
 docker exec tx-url-shortener /opt/tx-url-shortener/bin/tx-url-shortener -generate-api-key
 ```
@@ -28,25 +28,30 @@ curl -H "Authorization: Bearer <your-api-key>" \
 **Response**:
 ```json
 {
+  "ip_address": "172.17.0.1",
+  "views": 0,
   "code": "SPHTk",
-  "url": "http://localhost:8080/SPHTk",
-  "created": true
+  "created_at": 1591187797,
+  "original": "https://google.pl/",
+  "url": "http://localhost:8080/SPHTk"
 }
 ```
-### Get data about specified URL
+
+### Get data about shortened URL
 **Request**:
 ```shell script
 curl -H "Authorization: Bearer <your-api-key>" \
      -X GET \
-      http://localhost:8080/api/urls/<your-url-code>
+      http://localhost:8080/api/urls/<code>
 ```
 **Response**:
 ```json
 {
   "ip_address": "172.17.0.1",
-  "counter": 1,
+  "views": 10,
   "code": "SPHTk",
   "created_at": 1591187797,
-  "original": "https://google.pl/"
+  "original": "https://google.pl/",
+  "url": "http://localhost:8080/SPHTk"
 }
 ```

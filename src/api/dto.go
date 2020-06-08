@@ -2,7 +2,7 @@ package api
 
 type ShortURL struct {
 	IPAddress string `json:"ip_address"`
-	Counter   int64  `json:"counter"`
+	Views     int64  `json:"views"`
 	Code      string `json:"code"`
 	CreatedAt int64  `json:"created_at"`
 	Original  string `json:"original"`

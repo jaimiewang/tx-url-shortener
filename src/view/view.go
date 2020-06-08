@@ -27,7 +27,7 @@ func ShortURLRedirectView(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	shortURL.Counter++
+	shortURL.Views++
 	_, err = trans.Update(shortURL)
 	if err != nil {
 		_ = trans.Rollback()
