@@ -10,6 +10,8 @@ import (
 	"tx-url-shortener/database"
 )
 
+type Response map[string]interface{}
+
 func ParseAPIForm(r *http.Request, i interface{}) error {
 	contentType := r.Header.Get("Content-Type")
 	if contentType != "application/json" {
@@ -44,7 +46,7 @@ func WriteAPIResponse(w http.ResponseWriter, i interface{}) {
 
 func Error(w http.ResponseWriter, error string, code int) {
 	w.WriteHeader(code)
-	WriteAPIResponse(w, map[string]interface{}{
+	WriteAPIResponse(w, Response{
 		"error": error,
 	})
 }
