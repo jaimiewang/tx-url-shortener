@@ -6,3 +6,4 @@ database:
   name: "db.sqlite3"
 base_code_length: 5
 short_url_prefix: "http://localhost:8080"
+pretty_api_responses: true

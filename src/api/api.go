@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"tx-url-shortener/config"
 	"tx-url-shortener/database"
 )
 
@@ -25,7 +26,15 @@ func ParseAPIForm(r *http.Request, i interface{}) error {
 func WriteAPIResponse(w http.ResponseWriter, i interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 
-	b, err := json.Marshal(i)
+	var b []byte
+	var err error
+
+	if config.Config.PrettyAPIResponses {
+		b, err = json.MarshalIndent(i, "", "    ")
+	} else {
+		b, err = json.Marshal(i)
+	}
+
 	if err != nil {
 		return
 	}
