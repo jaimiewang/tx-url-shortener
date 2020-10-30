@@ -1,9 +1,13 @@
 database:
-  engine: "sqlite3"
-  user: ""
-  password: ""
-  port: 0
-  name: "db.sqlite3"
+  driver_name: "mysql"
+  user: "root"
+  password: "test"
+  port: 3306
+  name: "test_ls"
+  hostname: "192.168.1.252"
+  engine: "InnoDB"
+  charset: "utf8"
+
 base_code_length: 5
 short_url_prefix: "http://localhost:8080"
 pretty_api_responses: true
