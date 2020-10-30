@@ -6,6 +6,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/mattn/go-sqlite3"
 	"gopkg.in/gorp.v2"
+	"strconv"
 	"strings"
 	"time"
 	"tx-url-shortener/config"
@@ -21,7 +22,7 @@ func buildMySQLDataSourceName(user string, pass string, hostname string, port ui
 	builder.WriteString("@tcp(")
 	builder.WriteString(hostname)
 	builder.WriteRune(':')
-	builder.WriteString(string(port))
+	builder.WriteString(strconv.Itoa(int(port)))
 	builder.WriteString(")/")
 	builder.WriteString(name)
 
@@ -33,7 +34,7 @@ func InitDatabase() error {
 	var dataSourceName string
 	var dialect gorp.Dialect
 
-	switch dbEngine := strings.ToLower(config.Config.Database.Engine); dbEngine {
+	switch driver := strings.ToLower(config.Config.Database.DriverName); driver {
 	case "sqlite3", "sqlite":
 		driverName = "sqlite3"
 		dataSourceName = config.Config.Database.Name
@@ -47,9 +48,11 @@ func InitDatabase() error {
 			config.Config.Database.Port,
 			config.Config.Database.Name,
 		)
-		dialect = gorp.MySQLDialect{}
+		dbEngine := config.Config.Database.Engine
+		dbCharset := config.Config.Database.Charset
+		dialect = gorp.MySQLDialect{Engine:dbEngine, Encoding:dbCharset}
 	default:
-		return fmt.Errorf("not supported database engine: %s", dbEngine)
+		return fmt.Errorf("not supported database engine: %s", driver)
 	}
 
 	db, err := sql.Open(driverName, dataSourceName)
